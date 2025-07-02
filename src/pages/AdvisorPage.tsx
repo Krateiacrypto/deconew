@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   MessageCircle, 
@@ -12,8 +12,15 @@ import {
   TrendingUp,
   FileText
 } from 'lucide-react';
+import { AdvisorChat } from '../components/advisor/AdvisorChat';
+import { VideoCall } from '../components/advisor/VideoCall';
+import toast from 'react-hot-toast';
 
 export const AdvisorPage: React.FC = () => {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
+  const [callType, setCallType] = useState<'video' | 'audio'>('video');
+
   const advisor = {
     id: '1',
     name: 'Dr. Sarah Johnson',
@@ -63,6 +70,27 @@ export const AdvisorPage: React.FC = () => {
       topic: 'Yeni Yatırım Fırsatları'
     }
   ];
+
+  const handleStartChat = () => {
+    setIsChatOpen(true);
+    toast.success('Chat başlatıldı!');
+  };
+
+  const handleVideoCall = () => {
+    setCallType('video');
+    setIsVideoCallOpen(true);
+    toast.success('Video görüşme başlatılıyor...');
+  };
+
+  const handleVoiceCall = () => {
+    setCallType('audio');
+    setIsVideoCallOpen(true);
+    toast.success('Sesli arama başlatılıyor...');
+  };
+
+  const handleScheduleMeeting = () => {
+    toast.success('Randevu talebiniz gönderildi!');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -128,15 +156,24 @@ export const AdvisorPage: React.FC = () => {
               </div>
 
               <div className="space-y-3">
-                <button className="w-full bg-emerald-600 text-white py-3 px-4 rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center space-x-2">
+                <button 
+                  onClick={handleStartChat}
+                  className="w-full bg-emerald-600 text-white py-3 px-4 rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center space-x-2"
+                >
                   <MessageCircle className="w-5 h-5" />
                   <span>Mesaj Gönder</span>
                 </button>
-                <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
+                <button 
+                  onClick={handleVideoCall}
+                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                >
                   <Video className="w-5 h-5" />
                   <span>Video Görüşme</span>
                 </button>
-                <button className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2">
+                <button 
+                  onClick={handleVoiceCall}
+                  className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
+                >
                   <Phone className="w-5 h-5" />
                   <span>Telefon Görüşmesi</span>
                 </button>
@@ -219,7 +256,10 @@ export const AdvisorPage: React.FC = () => {
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-gray-900">Yaklaşan Görüşmeler</h3>
-                <button className="text-emerald-600 hover:text-emerald-700 font-medium">
+                <button 
+                  onClick={handleScheduleMeeting}
+                  className="text-emerald-600 hover:text-emerald-700 font-medium"
+                >
                   Yeni Randevu Al
                 </button>
               </div>
@@ -242,7 +282,10 @@ export const AdvisorPage: React.FC = () => {
                         <p className="text-sm text-gray-600">{meeting.date} - {meeting.time}</p>
                       </div>
                     </div>
-                    <button className="text-emerald-600 hover:text-emerald-700 font-medium">
+                    <button 
+                      onClick={meeting.type === 'video' ? handleVideoCall : handleVoiceCall}
+                      className="text-emerald-600 hover:text-emerald-700 font-medium"
+                    >
                       Katıl
                     </button>
                   </div>
@@ -251,6 +294,26 @@ export const AdvisorPage: React.FC = () => {
             </motion.div>
           </div>
         </div>
+
+        {/* Chat Component */}
+        <AdvisorChat
+          advisorId={advisor.id}
+          advisorName={advisor.name}
+          advisorAvatar={advisor.avatar}
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          onVideoCall={handleVideoCall}
+          onVoiceCall={handleVoiceCall}
+        />
+
+        {/* Video Call Component */}
+        <VideoCall
+          advisorName={advisor.name}
+          advisorAvatar={advisor.avatar}
+          isOpen={isVideoCallOpen}
+          onClose={() => setIsVideoCallOpen(false)}
+          callType={callType}
+        />
       </div>
     </div>
   );

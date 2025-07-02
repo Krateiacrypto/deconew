@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Menu, X, Wallet, Globe, User, LogOut, Settings } from 'lucide-react';
+import { Menu, X, Wallet, User, LogOut, Settings } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useWalletStore } from '../../store/walletStore';
+import { useLanguageStore } from '../../store/languageStore';
+import { LanguageSelector } from './LanguageSelector';
 
 export const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -11,26 +13,31 @@ export const Header: React.FC = () => {
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuthStore();
   const { isConnected, address } = useWalletStore();
+  const { t } = useLanguageStore();
 
   const navigation = [
-    { name: 'Ana Sayfa', href: '/' },
-    { name: 'Projeler', href: '/projects' },
-    { name: 'Trading', href: '/trading' },
-    { name: 'ICO', href: '/ico' },
-    { name: 'Blog', href: '/blog' },
-    { name: 'Hakkımızda', href: '/about' },
+    { name: t('nav.home'), href: '/' },
+    { name: t('nav.projects'), href: '/projects' },
+    { name: t('nav.trading'), href: '/trading' },
+    { name: t('nav.ico'), href: '/ico' },
+    { name: t('nav.blog'), href: '/blog' },
+    { name: t('nav.about'), href: '/about' },
   ];
 
   const userNavigation = [
-    { name: 'Dashboard', href: '/dashboard' },
-    { name: 'Portföy', href: '/portfolio' },
-    { name: 'Cüzdan', href: '/wallet' },
-    { name: 'Danışman', href: '/advisor' },
-    { name: 'Profil', href: '/profile' },
+    { name: t('nav.dashboard'), href: '/dashboard' },
+    { name: t('nav.portfolio'), href: '/portfolio' },
+    { name: t('nav.wallet'), href: '/wallet' },
+    { name: t('nav.advisor'), href: '/advisor' },
+    { name: 'KYC', href: '/kyc' },
+    { name: 'Staking', href: '/staking' },
   ];
 
   const adminNavigation = [
-    { name: 'Admin Panel', href: '/admin' },
+    { name: t('admin.userManagement'), href: '/admin/users' },
+    { name: t('admin.projectManagement'), href: '/admin/projects' },
+    { name: t('admin.kycManagement'), href: '/admin/kyc' },
+    { name: t('admin.systemSettings'), href: '/admin/settings' },
   ];
 
   const formatAddress = (addr: string) => {
@@ -84,10 +91,7 @@ export const Header: React.FC = () => {
 
           {/* User Actions */}
           <div className="hidden lg:flex items-center space-x-4">
-            <button className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors">
-              <Globe className="w-4 h-4" />
-              <span>TR</span>
-            </button>
+            <LanguageSelector />
 
             {/* Wallet Status */}
             {isConnected && address && (
@@ -127,7 +131,7 @@ export const Header: React.FC = () => {
                       </Link>
                     ))}
                     
-                    {user?.role === 'admin' && (
+                    {(user?.role === 'admin' || user?.role === 'superadmin') && (
                       <>
                         <hr className="my-2" />
                         {adminNavigation.map((item) => (
@@ -152,7 +156,7 @@ export const Header: React.FC = () => {
                       className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                     >
                       <LogOut className="w-4 h-4" />
-                      <span>Çıkış Yap</span>
+                      <span>{t('nav.logout')}</span>
                     </button>
                   </motion.div>
                 )}
@@ -163,14 +167,14 @@ export const Header: React.FC = () => {
                   to="/login"
                   className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors"
                 >
-                  Giriş Yap
+                  {t('nav.login')}
                 </Link>
                 <Link
                   to="/register"
                   className="flex items-center space-x-2 px-6 py-2 bg-gradient-to-r from-emerald-500 to-blue-600 text-white rounded-lg hover:from-emerald-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   <Wallet className="w-4 h-4" />
-                  <span>Kayıt Ol</span>
+                  <span>{t('nav.register')}</span>
                 </Link>
               </div>
             )}
@@ -226,6 +230,10 @@ export const Header: React.FC = () => {
               )}
               
               <div className="pt-4 border-t border-emerald-100">
+                <div className="px-4 py-2">
+                  <LanguageSelector />
+                </div>
+                
                 {isAuthenticated ? (
                   <button
                     onClick={() => {
@@ -235,7 +243,7 @@ export const Header: React.FC = () => {
                     className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200"
                   >
                     <LogOut className="w-4 h-4" />
-                    <span>Çıkış Yap</span>
+                    <span>{t('nav.logout')}</span>
                   </button>
                 ) : (
                   <div className="space-y-2">
@@ -244,14 +252,14 @@ export const Header: React.FC = () => {
                       onClick={() => setIsMenuOpen(false)}
                       className="block w-full text-center px-6 py-3 border border-emerald-600 text-emerald-600 rounded-lg hover:bg-emerald-50 transition-all duration-200"
                     >
-                      Giriş Yap
+                      {t('nav.login')}
                     </Link>
                     <Link
                       to="/register"
                       onClick={() => setIsMenuOpen(false)}
                       className="block w-full text-center px-6 py-3 bg-gradient-to-r from-emerald-500 to-blue-600 text-white rounded-lg hover:from-emerald-600 hover:to-blue-700 transition-all duration-200"
                     >
-                      Kayıt Ol
+                      {t('nav.register')}
                     </Link>
                   </div>
                 )}
