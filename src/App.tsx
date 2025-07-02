@@ -16,8 +16,14 @@ import { BlogPage } from './pages/BlogPage';
 import { PortfolioPage } from './pages/PortfolioPage';
 import { AdvisorPage } from './pages/AdvisorPage';
 import { WalletPage } from './pages/WalletPage';
+import { KYCPage } from './pages/KYCPage';
+import { StakingPage } from './pages/StakingPage';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { UserDashboard } from './pages/user/UserDashboard';
+import { KYCManagement } from './pages/admin/KYCManagement';
+import { ProjectManagement } from './pages/admin/ProjectManagement';
+import { UserManagement } from './pages/admin/UserManagement';
+import { SystemSettings } from './pages/admin/SystemSettings';
 import { useAuthStore } from './store/authStore';
 
 // Protected Route Component
@@ -31,7 +37,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean 
     return <Navigate to="/login" replace />;
   }
   
-  if (adminOnly && user?.role !== 'admin') {
+  if (adminOnly && user?.role !== 'admin' && user?.role !== 'superadmin') {
     return <Navigate to="/dashboard" replace />;
   }
   
@@ -42,7 +48,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean 
 const DashboardRouter: React.FC = () => {
   const { user } = useAuthStore();
   
-  if (user?.role === 'admin') {
+  if (user?.role === 'admin' || user?.role === 'superadmin') {
     return <AdminDashboard />;
   }
   
@@ -121,6 +127,22 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/kyc" 
+              element={
+                <ProtectedRoute>
+                  <KYCPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/staking" 
+              element={
+                <ProtectedRoute>
+                  <StakingPage />
+                </ProtectedRoute>
+              } 
+            />
             
             {/* Admin Routes */}
             <Route 
@@ -132,10 +154,34 @@ function App() {
               } 
             />
             <Route 
-              path="/admin/*" 
+              path="/admin/kyc" 
               element={
                 <ProtectedRoute adminOnly>
-                  <AdminDashboard />
+                  <KYCManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/projects" 
+              element={
+                <ProtectedRoute adminOnly>
+                  <ProjectManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/users" 
+              element={
+                <ProtectedRoute adminOnly>
+                  <UserManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/settings" 
+              element={
+                <ProtectedRoute adminOnly>
+                  <SystemSettings />
                 </ProtectedRoute>
               } 
             />
