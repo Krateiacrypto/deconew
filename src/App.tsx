@@ -24,6 +24,7 @@ import { KYCManagement } from './pages/admin/KYCManagement';
 import { ProjectManagement } from './pages/admin/ProjectManagement';
 import { UserManagement } from './pages/admin/UserManagement';
 import { SystemSettings } from './pages/admin/SystemSettings';
+import { ContentManagement } from './pages/admin/ContentManagement';
 import { useAuthStore } from './store/authStore';
 
 // Protected Route Component
@@ -182,6 +183,14 @@ function App() {
               element={
                 <ProtectedRoute adminOnly>
                   <SystemSettings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/content" 
+              element={
+                <ProtectedRoute adminOnly>
+                  <ContentManagement />
                 </ProtectedRoute>
               } 
             />
