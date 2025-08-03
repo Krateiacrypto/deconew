@@ -38,6 +38,7 @@ export const Header: React.FC = () => {
     { name: t('admin.projectManagement'), href: '/admin/projects' },
     { name: t('admin.kycManagement'), href: '/admin/kyc' },
     { name: 'İçerik Yönetimi', href: '/admin/content' },
+    { name: 'Görsel Editör', href: '/admin/editor' },
     { name: t('admin.systemSettings'), href: '/admin/settings' },
   ];
 

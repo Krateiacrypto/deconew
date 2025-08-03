@@ -25,6 +25,7 @@ import { ProjectManagement } from './pages/admin/ProjectManagement';
 import { UserManagement } from './pages/admin/UserManagement';
 import { SystemSettings } from './pages/admin/SystemSettings';
 import { ContentManagement } from './pages/admin/ContentManagement';
+import { VisualEditor } from './pages/admin/VisualEditor';
 import { useAuthStore } from './store/authStore';
 
 // Protected Route Component
@@ -191,6 +192,14 @@ function App() {
               element={
                 <ProtectedRoute adminOnly>
                   <ContentManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/editor" 
+              element={
+                <ProtectedRoute adminOnly>
+                  <VisualEditor />
                 </ProtectedRoute>
               } 
             />
