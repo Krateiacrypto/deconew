@@ -1,15 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Palette, 
-  Type, 
-  Layout, 
-  Spacing,
-  Border,
-  Shadow,
-  ChevronDown,
-  ChevronRight
-} from 'lucide-react';
+import { Palette, Type, Layout, Space as Spacing, Sword as Border, Share as Shadow, ChevronDown, ChevronRight } from 'lucide-react';
 import { HexColorPicker } from 'react-colorful';
 import { useEditorStore } from '../../store/editorStore';
 import { BlockStyle } from '../../types/editor';
