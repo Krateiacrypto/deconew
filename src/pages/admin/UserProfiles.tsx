@@ -18,7 +18,14 @@ import {
   UserCheck,
   UserX,
   Building,
-  Globe
+  Globe,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Star,
+  TrendingUp,
+  DollarSign,
+  Activity
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useDataStore } from '../../store/dataStore';
@@ -31,6 +38,8 @@ export const UserProfiles: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
 
   useEffect(() => {
     fetchUsers();
@@ -47,6 +56,13 @@ export const UserProfiles: React.FC = () => {
       </div>
     );
   }
+
+  const filteredUsers = users.filter(u => {
+    const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         u.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+    return matchesSearch && matchesRole;
+  });
 
   const handleEditUser = (targetUser: any) => {
     setSelectedUser(targetUser);
@@ -103,8 +119,52 @@ export const UserProfiles: React.FC = () => {
     }
   };
 
+  const getUserStats = (targetUser: any) => {
+    // Mock stats based on user role
+    switch (targetUser.role) {
+      case 'user':
+        return {
+          totalInvestment: Math.floor(Math.random() * 50000),
+          carbonCredits: Math.floor(Math.random() * 1000),
+          activeProjects: Math.floor(Math.random() * 10),
+          returns: Math.floor(Math.random() * 5000)
+        };
+      case 'advisor':
+        return {
+          assignedUsers: Math.floor(Math.random() * 50),
+          completedConsultations: Math.floor(Math.random() * 200),
+          rating: (4.5 + Math.random() * 0.5).toFixed(1),
+          monthlyRevenue: Math.floor(Math.random() * 10000)
+        };
+      case 'verification_org':
+        return {
+          verifiedProjects: Math.floor(Math.random() * 100),
+          pendingVerifications: Math.floor(Math.random() * 20),
+          certificationRate: (85 + Math.random() * 15).toFixed(1),
+          totalCarbonVerified: Math.floor(Math.random() * 1000000)
+        };
+      case 'ngo':
+        return {
+          activeProjects: Math.floor(Math.random() * 15),
+          beneficiaries: Math.floor(Math.random() * 10000),
+          fundsRaised: Math.floor(Math.random() * 100000),
+          impactScore: Math.floor(80 + Math.random() * 20)
+        };
+      case 'carbon_provider':
+        return {
+          activeProjects: Math.floor(Math.random() * 25),
+          carbonCreditsProduced: Math.floor(Math.random() * 500000),
+          revenue: Math.floor(Math.random() * 200000),
+          clients: Math.floor(Math.random() * 100)
+        };
+      default:
+        return {};
+    }
+  };
+
   const renderUserCard = (targetUser: any) => {
     const IconComponent = getUserTypeIcon(targetUser.role);
+    const stats = getUserStats(targetUser);
     
     return (
       <motion.div
@@ -115,9 +175,10 @@ export const UserProfiles: React.FC = () => {
           targetUser.isActive ? 'border-emerald-500' : 'border-red-500'
         } hover:shadow-xl transition-all duration-300`}
       >
-        <div className="flex items-start justify-between mb-4">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <div className={`w-16 h-16 bg-gradient-to-br from-emerald-500 to-blue-600 rounded-xl flex items-center justify-center`}>
+            <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-blue-600 rounded-xl flex items-center justify-center">
               <IconComponent className="w-8 h-8 text-white" />
             </div>
             <div>
@@ -204,7 +265,7 @@ export const UserProfiles: React.FC = () => {
 
         {/* Organization Info */}
         {targetUser.organizationName && (
-          <div className="p-4 bg-blue-50 rounded-lg">
+          <div className="p-4 bg-blue-50 rounded-lg mb-4">
             <div className="flex items-center space-x-2 mb-2">
               <Building className="w-4 h-4 text-blue-600" />
               <span className="font-medium text-blue-800">{targetUser.organizationName}</span>
@@ -215,9 +276,23 @@ export const UserProfiles: React.FC = () => {
           </div>
         )}
 
+        {/* Role-specific Stats */}
+        {Object.keys(stats).length > 0 && (
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            {Object.entries(stats).map(([key, value]) => (
+              <div key={key} className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500 capitalize">
+                  {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                </p>
+                <p className="font-bold text-gray-900">{value}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Specializations & Certifications */}
         {(targetUser.specializations?.length > 0 || targetUser.certifications?.length > 0) && (
-          <div className="mt-4 space-y-3">
+          <div className="space-y-3">
             {targetUser.specializations?.length > 0 && (
               <div>
                 <p className="text-sm font-medium text-gray-700 mb-2">Uzmanlık Alanları:</p>
@@ -249,6 +324,33 @@ export const UserProfiles: React.FC = () => {
     );
   };
 
+  const stats = [
+    {
+      title: 'Toplam Kullanıcı',
+      value: users.length,
+      icon: User,
+      color: 'blue'
+    },
+    {
+      title: 'Aktif Kullanıcı',
+      value: users.filter(u => u.isActive).length,
+      icon: CheckCircle,
+      color: 'emerald'
+    },
+    {
+      title: 'KYC Bekleyen',
+      value: users.filter(u => u.kycStatus === 'pending').length,
+      icon: Clock,
+      color: 'yellow'
+    },
+    {
+      title: 'Organizasyonlar',
+      value: users.filter(u => ['admin', 'superadmin', 'advisor', 'verification_org', 'ngo', 'carbon_provider'].includes(u.role)).length,
+      icon: Building,
+      color: 'purple'
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -263,9 +365,63 @@ export const UserProfiles: React.FC = () => {
           <p className="text-gray-600">Tüm kullanıcı profillerini görüntüle ve yönet</p>
         </motion.div>
 
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat, index) => (
+            <motion.div
+              key={stat.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
+              className="bg-white rounded-2xl p-6 shadow-lg"
+            >
+              <div className="flex items-center space-x-3">
+                <div className={`w-12 h-12 bg-${stat.color}-100 rounded-xl flex items-center justify-center`}>
+                  <stat.icon className={`w-6 h-6 text-${stat.color}-600`} />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">{stat.value}</h3>
+                  <p className="text-gray-600 text-sm">{stat.title}</p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+            <div className="relative flex-1 max-w-md">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Kullanıcı ara..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            >
+              <option value="all">Tüm Roller</option>
+              <option value="user">Kullanıcı</option>
+              <option value="advisor">Danışman</option>
+              <option value="verification_org">Doğrulama Kuruluşu</option>
+              <option value="ngo">STK</option>
+              <option value="carbon_provider">Karbon Sağlayıcı</option>
+              <option value="admin">Admin</option>
+              <option value="superadmin">Süper Admin</option>
+            </select>
+          </div>
+        </div>
+
         {/* User Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {users.map(renderUserCard)}
+          {filteredUsers.map(renderUserCard)}
         </div>
 
         {/* Edit Modal */}

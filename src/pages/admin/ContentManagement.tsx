@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FileText, 
   Users, 
@@ -20,11 +20,24 @@ import {
   X,
   Upload,
   Download,
-  BarChart3
+  BarChart3,
+  CheckCircle,
+  Clock,
+  AlertTriangle,
+  Star,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Type,
+  Palette
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useContentStore } from '../../store/contentStore';
 import { ContentItem } from '../../types/content';
+import { ContentList } from '../../components/admin/content/ContentList';
+import { ContentForm } from '../../components/admin/content/ContentForm';
+import { RoadmapManager } from '../../components/admin/content/RoadmapManager';
+import { TeamManager } from '../../components/admin/content/TeamManager';
+import { BannerManager } from '../../components/admin/content/BannerManager';
 import toast from 'react-hot-toast';
 
 type ContentSection = 'content' | 'roadmap' | 'team' | 'banners' | 'audit' | 'analytics';
@@ -55,8 +68,6 @@ export const ContentManagement: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<ContentItem | null>(null);
   const [viewingItem, setViewingItem] = useState<ContentItem | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     fetchContent();
@@ -67,29 +78,21 @@ export const ContentManagement: React.FC = () => {
   }, [fetchContent, fetchRoadmap, fetchTeam, fetchBanners, fetchAuditLogs]);
 
   const contentTypes = [
-    { type: 'news' as const, label: 'Haberler', icon: FileText, color: 'blue' },
-    { type: 'mission' as const, label: 'Misyon', icon: FileText, color: 'emerald' },
-    { type: 'vision' as const, label: 'Vizyon', icon: FileText, color: 'purple' },
-    { type: 'values' as const, label: 'Değerler', icon: FileText, color: 'orange' },
-    { type: 'announcement' as const, label: 'Duyurular', icon: Megaphone, color: 'red' }
+    { type: 'news' as const, label: 'Haberler', icon: FileText, color: 'blue', description: 'Platform haberleri ve güncellemeler' },
+    { type: 'mission' as const, label: 'Misyon', icon: Star, color: 'emerald', description: 'Şirket misyonu ve hedefleri' },
+    { type: 'vision' as const, label: 'Vizyon', icon: Eye, color: 'purple', description: 'Gelecek vizyonu ve stratejiler' },
+    { type: 'values' as const, label: 'Değerler', icon: CheckCircle, color: 'orange', description: 'Kurumsal değerler ve prensipler' },
+    { type: 'announcement' as const, label: 'Duyurular', icon: Megaphone, color: 'red', description: 'Önemli duyurular ve bildirimler' }
   ];
 
   const sections = [
-    { id: 'content' as const, label: 'İçerik Yönetimi', icon: FileText, count: content.length },
-    { id: 'roadmap' as const, label: 'Roadmap', icon: MapPin, count: roadmap.length },
-    { id: 'team' as const, label: 'Ekip', icon: Users, count: team.length },
-    { id: 'banners' as const, label: 'Banner\'lar', icon: Megaphone, count: banners.length },
-    { id: 'analytics' as const, label: 'Analitik', icon: BarChart3, count: 0 },
-    { id: 'audit' as const, label: 'Değişiklik Geçmişi', icon: History, count: auditLogs.length }
+    { id: 'content' as const, label: 'İçerik Yönetimi', icon: FileText, count: content.length, description: 'Blog, haberler ve sayfa içerikleri' },
+    { id: 'roadmap' as const, label: 'Roadmap', icon: MapPin, count: roadmap.length, description: 'Proje yol haritası ve milestone\'lar' },
+    { id: 'team' as const, label: 'Ekip', icon: Users, count: team.length, description: 'Ekip üyeleri ve organizasyon yapısı' },
+    { id: 'banners' as const, label: 'Banner\'lar', icon: Megaphone, count: banners.length, description: 'Site banner\'ları ve duyuru çubukları' },
+    { id: 'analytics' as const, label: 'Analitik', icon: BarChart3, count: 0, description: 'İçerik performans metrikleri' },
+    { id: 'audit' as const, label: 'Değişiklik Geçmişi', icon: History, count: auditLogs.length, description: 'Tüm içerik değişiklik logları' }
   ];
-
-  const filteredContent = content.filter(item => {
-    const matchesType = item.type === selectedContentType;
-    const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.content.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-    return matchesType && matchesSearch && matchesStatus;
-  });
 
   const handleSave = async (data: Partial<ContentItem>) => {
     try {
@@ -156,12 +159,168 @@ export const ContentManagement: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
+          <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Erişim Reddedildi</h2>
           <p className="text-gray-600">Bu sayfaya erişim yetkiniz bulunmamaktadır.</p>
         </div>
       </div>
     );
   }
+
+  const renderContentSection = () => (
+    <div className="space-y-8">
+      {/* Content Type Dashboard */}
+      <div className="bg-white rounded-2xl p-8 shadow-lg">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">İçerik Türleri</h3>
+            <p className="text-gray-600">Yönetmek istediğiniz içerik türünü seçin</p>
+          </div>
+          <button
+            onClick={handleCreate}
+            className="flex items-center space-x-2 bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors shadow-lg hover:shadow-xl"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Yeni İçerik</span>
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          {contentTypes.map((type) => {
+            const typeContent = content.filter(c => c.type === type.type);
+            const publishedCount = typeContent.filter(c => c.status === 'published').length;
+            
+            return (
+              <motion.button
+                key={type.type}
+                onClick={() => setSelectedContentType(type.type)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`p-6 rounded-2xl border-2 transition-all duration-300 text-left ${
+                  selectedContentType === type.type
+                    ? `border-${type.color}-500 bg-${type.color}-50 shadow-lg`
+                    : 'border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-md'
+                }`}
+              >
+                <div className={`w-16 h-16 bg-${type.color}-100 rounded-2xl flex items-center justify-center mb-4 mx-auto`}>
+                  <type.icon className={`w-8 h-8 text-${type.color}-600`} />
+                </div>
+                <h4 className="font-bold text-gray-900 text-center mb-2">{type.label}</h4>
+                <p className="text-sm text-gray-600 text-center mb-4">{type.description}</p>
+                
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="text-center p-2 bg-white rounded-lg">
+                    <div className="font-bold text-gray-900">{typeContent.length}</div>
+                    <div className="text-gray-500">Toplam</div>
+                  </div>
+                  <div className="text-center p-2 bg-white rounded-lg">
+                    <div className="font-bold text-emerald-600">{publishedCount}</div>
+                    <div className="text-gray-500">Yayında</div>
+                  </div>
+                </div>
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Content List */}
+      <ContentList
+        content={content}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onView={handleView}
+        onCreate={handleCreate}
+        title={contentTypes.find(t => t.type === selectedContentType)?.label || 'İçerik'}
+        type={selectedContentType}
+      />
+    </div>
+  );
+
+  const renderAnalyticsSection = () => (
+    <div className="bg-white rounded-2xl p-8 shadow-lg">
+      <div className="text-center">
+        <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-xl font-bold text-gray-900 mb-2">İçerik Analitikleri</h3>
+        <p className="text-gray-600 mb-6">İçerik performans metrikleri ve kullanıcı etkileşim verileri</p>
+        
+        <div className="grid md:grid-cols-3 gap-6 mt-8">
+          <div className="p-6 bg-blue-50 rounded-xl">
+            <div className="text-3xl font-bold text-blue-600 mb-2">
+              {content.filter(c => c.status === 'published').length}
+            </div>
+            <div className="text-blue-800 font-medium">Yayında İçerik</div>
+          </div>
+          
+          <div className="p-6 bg-emerald-50 rounded-xl">
+            <div className="text-3xl font-bold text-emerald-600 mb-2">
+              {content.filter(c => c.status === 'draft').length}
+            </div>
+            <div className="text-emerald-800 font-medium">Taslak İçerik</div>
+          </div>
+          
+          <div className="p-6 bg-purple-50 rounded-xl">
+            <div className="text-3xl font-bold text-purple-600 mb-2">
+              {Math.floor(Math.random() * 10000)}
+            </div>
+            <div className="text-purple-800 font-medium">Toplam Görüntülenme</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderAuditSection = () => (
+    <div className="bg-white rounded-2xl p-8 shadow-lg">
+      <h3 className="text-xl font-bold text-gray-900 mb-6">Değişiklik Geçmişi</h3>
+      
+      {auditLogs.length > 0 ? (
+        <div className="space-y-4">
+          {auditLogs.map((log, index) => (
+            <motion.div
+              key={log.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+              className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      log.action === 'create' ? 'bg-emerald-100 text-emerald-700' :
+                      log.action === 'update' ? 'bg-blue-100 text-blue-700' :
+                      log.action === 'delete' ? 'bg-red-100 text-red-700' :
+                      'bg-purple-100 text-purple-700'
+                    }`}>
+                      {log.action === 'create' ? 'Oluşturuldu' :
+                       log.action === 'update' ? 'Güncellendi' :
+                       log.action === 'delete' ? 'Silindi' :
+                       log.action === 'publish' ? 'Yayınlandı' : 'Yayından Kaldırıldı'}
+                    </span>
+                    <span className="text-sm font-medium text-gray-900">{log.contentType}</span>
+                  </div>
+                  
+                  <div className="text-sm text-gray-600 mb-2">
+                    <strong>{log.userName}</strong> tarafından değiştirildi
+                  </div>
+                  
+                  <div className="text-xs text-gray-500">
+                    {new Date(log.timestamp).toLocaleString('tr-TR')}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8">
+          <History className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600">Henüz değişiklik kaydı bulunmuyor</p>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -179,11 +338,11 @@ export const ContentManagement: React.FC = () => {
               <p className="text-gray-600">Website içeriklerini profesyonel şekilde yönetin</p>
             </div>
             <div className="flex items-center space-x-3">
-              <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 <Download className="w-4 h-4" />
                 <span>Backup Al</span>
               </button>
-              <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+              <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
                 <Upload className="w-4 h-4" />
                 <span>İçe Aktar</span>
               </button>
@@ -199,16 +358,19 @@ export const ContentManagement: React.FC = () => {
                 <button
                   key={section.id}
                   onClick={() => setActiveSection(section.id)}
-                  className={`flex items-center space-x-2 py-4 px-6 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+                  className={`flex items-center space-x-3 py-6 px-8 border-b-2 font-medium text-sm transition-colors whitespace-nowrap min-w-0 ${
                     activeSection === section.id
                       ? 'border-emerald-500 text-emerald-600 bg-emerald-50'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  <section.icon className="w-4 h-4" />
-                  <span>{section.label}</span>
+                  <section.icon className="w-5 h-5 flex-shrink-0" />
+                  <div className="text-left">
+                    <div className="font-medium">{section.label}</div>
+                    <div className="text-xs text-gray-500">{section.description}</div>
+                  </div>
                   {section.count > 0 && (
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                       activeSection === section.id ? 'bg-emerald-200 text-emerald-800' : 'bg-gray-200 text-gray-600'
                     }`}>
                       {section.count}
@@ -221,365 +383,61 @@ export const ContentManagement: React.FC = () => {
         </div>
 
         {/* Content Area */}
-        <div className="space-y-8">
-          {activeSection === 'content' && (
-            <div className="space-y-6">
-              {/* Content Type Selector */}
-              <div className="bg-white rounded-2xl p-6 shadow-lg">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-gray-900">İçerik Türü Seçin</h3>
-                  <button
-                    onClick={handleCreate}
-                    className="flex items-center space-x-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Yeni İçerik</span>
-                  </button>
-                </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                  {contentTypes.map((type) => (
-                    <button
-                      key={type.type}
-                      onClick={() => setSelectedContentType(type.type)}
-                      className={`flex flex-col items-center space-y-2 p-4 rounded-xl border-2 transition-all duration-200 ${
-                        selectedContentType === type.type
-                          ? `border-${type.color}-500 bg-${type.color}-50 text-${type.color}-700`
-                          : 'border-gray-200 hover:border-emerald-300 hover:bg-emerald-50'
-                      }`}
-                    >
-                      <div className={`w-12 h-12 bg-${type.color}-100 rounded-xl flex items-center justify-center`}>
-                        <type.icon className={`w-6 h-6 text-${type.color}-600`} />
-                      </div>
-                      <span className="font-medium">{type.label}</span>
-                      <span className="text-xs text-gray-500">
-                        {content.filter(c => c.type === type.type).length} içerik
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Filters */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="text"
-                      placeholder="İçerik ara..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    />
-                  </div>
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  >
-                    <option value="all">Tüm Durumlar</option>
-                    <option value="published">Yayında</option>
-                    <option value="draft">Taslak</option>
-                    <option value="archived">Arşivlendi</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Content List */}
-              <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-                {filteredContent.length > 0 ? (
-                  <div className="divide-y divide-gray-200">
-                    {filteredContent.map((item, index) => (
-                      <motion.div
-                        key={item.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
-                        className="p-6 hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-3">
-                              <h3 className="text-lg font-bold text-gray-900">{item.title}</h3>
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                item.status === 'published' ? 'bg-emerald-100 text-emerald-700' :
-                                item.status === 'draft' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-gray-100 text-gray-700'
-                              }`}>
-                                {item.status === 'published' ? 'Yayında' :
-                                 item.status === 'draft' ? 'Taslak' : 'Arşivlendi'}
-                              </span>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                contentTypes.find(t => t.type === item.type)?.color === 'blue' ? 'bg-blue-100 text-blue-700' :
-                                contentTypes.find(t => t.type === item.type)?.color === 'emerald' ? 'bg-emerald-100 text-emerald-700' :
-                                contentTypes.find(t => t.type === item.type)?.color === 'purple' ? 'bg-purple-100 text-purple-700' :
-                                contentTypes.find(t => t.type === item.type)?.color === 'orange' ? 'bg-orange-100 text-orange-700' :
-                                'bg-red-100 text-red-700'
-                              }`}>
-                                {contentTypes.find(t => t.type === item.type)?.label}
-                              </span>
-                            </div>
-                            
-                            <p className="text-gray-600 mb-4 line-clamp-2">
-                              {item.content.replace(/<[^>]*>/g, '').substring(0, 200)}...
-                            </p>
-                            
-                            <div className="flex items-center space-x-6 text-sm text-gray-500">
-                              <div className="flex items-center space-x-1">
-                                <User className="w-4 h-4" />
-                                <span>{item.updatedBy}</span>
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <Calendar className="w-4 h-4" />
-                                <span>{new Date(item.updatedAt).toLocaleDateString('tr-TR')}</span>
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <FileText className="w-4 h-4" />
-                                <span>v{item.version}</span>
-                              </div>
-                              {item.publishedAt && (
-                                <div className="flex items-center space-x-1">
-                                  <Globe className="w-4 h-4" />
-                                  <span>Yayın: {new Date(item.publishedAt).toLocaleDateString('tr-TR')}</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center space-x-2 ml-4">
-                            <button
-                              onClick={() => handleView(item)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="Görüntüle"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleEdit(item)}
-                              className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                              title="Düzenle"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handlePublish(item)}
-                              className={`p-2 rounded-lg transition-colors ${
-                                item.status === 'published' 
-                                  ? 'text-orange-600 hover:bg-orange-50' 
-                                  : 'text-green-600 hover:bg-green-50'
-                              }`}
-                              title={item.status === 'published' ? 'Yayından Kaldır' : 'Yayınla'}
-                            >
-                              <Globe className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(item.id)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Sil"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-12 text-center">
-                    <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">İçerik bulunamadı</h3>
-                    <p className="text-gray-600 mb-4">
-                      {searchTerm || statusFilter !== 'all' 
-                        ? 'Arama kriterlerinize uygun içerik bulunamadı.' 
-                        : `Henüz ${contentTypes.find(t => t.type === selectedContentType)?.label.toLowerCase()} eklenmemiş.`}
-                    </p>
-                    <button
-                      onClick={handleCreate}
-                      className="bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors"
-                    >
-                      İlk İçeriği Ekle
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Other sections placeholder */}
-          {activeSection !== 'content' && (
-            <div className="bg-white rounded-2xl p-12 shadow-lg text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                {sections.find(s => s.id === activeSection)?.icon && (
-                  React.createElement(sections.find(s => s.id === activeSection)!.icon, {
-                    className: "w-8 h-8 text-gray-400"
-                  })
-                )}
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                {sections.find(s => s.id === activeSection)?.label}
-              </h3>
-              <p className="text-gray-600">Bu bölüm yakında eklenecek.</p>
-            </div>
-          )}
-        </div>
+        <motion.div
+          key={activeSection}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          {activeSection === 'content' && renderContentSection()}
+          {activeSection === 'roadmap' && <RoadmapManager />}
+          {activeSection === 'team' && <TeamManager />}
+          {activeSection === 'banners' && <BannerManager />}
+          {activeSection === 'analytics' && renderAnalyticsSection()}
+          {activeSection === 'audit' && renderAuditSection()}
+        </motion.div>
 
         {/* Content Form Modal */}
-        {showForm && (
-          <ContentFormModal
-            item={editingItem}
-            type={selectedContentType}
-            onSave={handleSave}
-            onCancel={() => {
-              setShowForm(false);
-              setEditingItem(null);
-            }}
-            isLoading={isLoading}
-          />
-        )}
+        <AnimatePresence>
+          {showForm && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            >
+              <ContentForm
+                item={editingItem}
+                type={selectedContentType}
+                onSave={handleSave}
+                onCancel={() => {
+                  setShowForm(false);
+                  setEditingItem(null);
+                }}
+                isLoading={isLoading}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* View Modal */}
-        {viewingItem && (
-          <ContentViewModal
-            item={viewingItem}
-            onClose={() => setViewingItem(null)}
-            onEdit={() => {
-              setViewingItem(null);
-              handleEdit(viewingItem);
-            }}
-            onPublish={() => {
-              handlePublish(viewingItem);
-              setViewingItem(null);
-            }}
-          />
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Content Form Modal Component
-interface ContentFormModalProps {
-  item?: ContentItem | null;
-  type: ContentItem['type'];
-  onSave: (data: Partial<ContentItem>) => void;
-  onCancel: () => void;
-  isLoading?: boolean;
-}
-
-const ContentFormModal: React.FC<ContentFormModalProps> = ({
-  item,
-  type,
-  onSave,
-  onCancel,
-  isLoading = false
-}) => {
-  const [formData, setFormData] = useState({
-    title: item?.title || '',
-    content: item?.content || '',
-    excerpt: item?.excerpt || '',
-    image: item?.image || '',
-    status: item?.status || 'draft' as ContentItem['status']
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave(formData);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-900">
-            {item ? 'İçerik Düzenle' : 'Yeni İçerik Oluştur'}
-          </h3>
-          <button onClick={onCancel} className="p-2 hover:bg-gray-100 rounded-lg">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Başlık</label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-              required
+        <AnimatePresence>
+          {viewingItem && (
+            <ContentViewModal
+              item={viewingItem}
+              onClose={() => setViewingItem(null)}
+              onEdit={() => {
+                setViewingItem(null);
+                handleEdit(viewingItem);
+              }}
+              onPublish={() => {
+                handlePublish(viewingItem);
+                setViewingItem(null);
+              }}
             />
-          </div>
-
-          {(type === 'news' || type === 'announcement') && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Özet</label>
-              <textarea
-                value={formData.excerpt}
-                onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                rows={3}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-              />
-            </div>
           )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">İçerik</label>
-            <textarea
-              value={formData.content}
-              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-              rows={10}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Resim URL</label>
-              <input
-                type="url"
-                value={formData.image}
-                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Durum</label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as ContentItem['status'] })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-              >
-                <option value="draft">Taslak</option>
-                <option value="published">Yayında</option>
-                <option value="archived">Arşivlendi</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex space-x-3 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-            >
-              İptal
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center space-x-2"
-            >
-              <Save className="w-4 h-4" />
-              <span>{isLoading ? 'Kaydediliyor...' : 'Kaydet'}</span>
-            </button>
-          </div>
-        </form>
-      </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
@@ -599,15 +457,21 @@ const ContentViewModal: React.FC<ContentViewModalProps> = ({
   onPublish
 }) => {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+    >
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-bold text-gray-900">{item.title}</h3>
+            <h3 className="text-2xl font-bold text-gray-900">{item.title}</h3>
             <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
               <span>Oluşturan: {item.createdBy}</span>
               <span>Son güncelleme: {new Date(item.updatedAt).toLocaleString('tr-TR')}</span>
@@ -615,7 +479,7 @@ const ContentViewModal: React.FC<ContentViewModalProps> = ({
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </button>
         </div>
         
@@ -648,23 +512,25 @@ const ContentViewModal: React.FC<ContentViewModalProps> = ({
           <div className="flex space-x-3">
             <button
               onClick={onEdit}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+              className="flex items-center space-x-2 px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
             >
-              Düzenle
+              <Edit className="w-4 h-4" />
+              <span>Düzenle</span>
             </button>
             <button
               onClick={onPublish}
-              className={`px-4 py-2 rounded-lg transition-colors ${
+              className={`flex items-center space-x-2 px-6 py-2 rounded-lg transition-colors ${
                 item.status === 'published'
                   ? 'border border-orange-300 text-orange-700 hover:bg-orange-50'
                   : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
             >
-              {item.status === 'published' ? 'Yayından Kaldır' : 'Yayınla'}
+              <Globe className="w-4 h-4" />
+              <span>{item.status === 'published' ? 'Yayından Kaldır' : 'Yayınla'}</span>
             </button>
           </div>
         </div>
       </motion.div>
-    </div>
+    </motion.div>
   );
 };
