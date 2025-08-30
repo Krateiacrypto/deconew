@@ -21,7 +21,8 @@ import {
   Activity,
   AlertTriangle,
   User,
-  Settings
+  Settings,
+  Clock
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useDataStore } from '../../store/dataStore';
