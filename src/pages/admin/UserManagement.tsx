@@ -123,6 +123,11 @@ export const UserManagement: React.FC = () => {
   });
 
   const handleToggleUserStatus = (userId: string) => {
+    if (!hasPermission(user, 'users.edit')) {
+      toast.error('Kullanıcı düzenleme yetkiniz bulunmamaktadır!');
+      return;
+    }
+    
     setUsers(users.map(u => 
       u.id === userId ? { ...u, isActive: !u.isActive } : u
     ));
@@ -130,6 +135,11 @@ export const UserManagement: React.FC = () => {
   };
 
   const handleDeleteUser = (userId: string) => {
+    if (!hasPermission(user, 'users.delete')) {
+      toast.error('Kullanıcı silme yetkiniz bulunmamaktadır!');
+      return;
+    }
+    
     if (window.confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
       setUsers(users.filter(u => u.id !== userId));
       toast.success('Kullanıcı silindi');
@@ -163,6 +173,7 @@ export const UserManagement: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
+          <Shield className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Erişim Reddedildi</h2>
           <p className="text-gray-600">Bu sayfaya erişim yetkiniz bulunmamaktadır.</p>
         </div>
@@ -307,6 +318,9 @@ export const UserManagement: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-4 px-4 font-medium">${targetUser.totalInvestment.toLocaleString()}</td>
+                    <td className="py-4 px-6 text-sm text-gray-600">
+                      {targetUser.lastLogin ? new Date(targetUser.lastLogin).toLocaleDateString('tr-TR') : 'Hiç'}
+                    </td>
                     <td className="py-4 px-6 text-sm text-gray-600">
                       {targetUser.lastLogin ? new Date(targetUser.lastLogin).toLocaleDateString('tr-TR') : 'Hiç'}
                     </td>

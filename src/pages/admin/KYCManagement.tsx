@@ -81,6 +81,7 @@ export const KYCManagement: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
+          <Shield className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Erişim Reddedildi</h2>
           <p className="text-gray-600">Bu sayfaya erişim yetkiniz bulunmamaktadır.</p>
         </div>

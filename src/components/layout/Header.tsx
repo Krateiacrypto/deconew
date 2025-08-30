@@ -37,6 +37,8 @@ export const Header: React.FC = () => {
   ];
 
   const adminNavigation = [
+    ...(user?.role === 'superadmin' 
+      ? [{ name: 'Kullanıcı Profilleri', href: '/admin/profiles' }] : []),
     ...(user?.role === 'admin' || user?.role === 'superadmin' 
       ? [{ name: t('admin.userManagement'), href: '/admin/users' }] : []),
     ...(user?.role === 'admin' || user?.role === 'superadmin' 

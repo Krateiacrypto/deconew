@@ -19,6 +19,8 @@ import { WalletPage } from './pages/WalletPage';
 import { KYCPage } from './pages/KYCPage';
 import { StakingPage } from './pages/StakingPage';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { SuperAdminDashboard } from './pages/admin/SuperAdminDashboard';
+import { UserProfiles } from './pages/admin/UserProfiles';
 import { UserDashboard } from './pages/user/UserDashboard';
 import { AdvisorDashboard } from './pages/advisor/AdvisorDashboard';
 import { VerificationDashboard } from './pages/verification/VerificationDashboard';
@@ -39,6 +41,7 @@ const DashboardRouter: React.FC = () => {
   
   switch (user?.role) {
     case 'superadmin':
+      return <SuperAdminDashboard />;
     case 'admin':
       return <AdminDashboard />;
     case 'advisor':
@@ -144,6 +147,22 @@ function App() {
             />
             
             {/* Admin Routes */}
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/profiles" 
+              element={
+                <ProtectedRoute allowedRoles={['superadmin']}>
+                  <UserProfiles />
+                </ProtectedRoute>
+              } 
+            />
             <Route 
               path="/admin" 
               element={
