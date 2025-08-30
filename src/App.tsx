@@ -19,42 +19,42 @@ import { WalletPage } from './pages/WalletPage';
 import { KYCPage } from './pages/KYCPage';
 import { StakingPage } from './pages/StakingPage';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
-import { SuperAdminDashboard } from './pages/admin/SuperAdminDashboard';
-import { UserProfiles } from './pages/admin/UserProfiles';
 import { UserDashboard } from './pages/user/UserDashboard';
-import { AdvisorDashboard } from './pages/advisor/AdvisorDashboard';
-import { VerificationDashboard } from './pages/verification/VerificationDashboard';
-import { NGODashboard } from './pages/ngo/NGODashboard';
-import { ProviderDashboard } from './pages/provider/ProviderDashboard';
 import { KYCManagement } from './pages/admin/KYCManagement';
 import { ProjectManagement } from './pages/admin/ProjectManagement';
 import { UserManagement } from './pages/admin/UserManagement';
 import { SystemSettings } from './pages/admin/SystemSettings';
 import { ContentManagement } from './pages/admin/ContentManagement';
 import { VisualEditor } from './pages/admin/VisualEditor';
-import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
+
+// Protected Route Component
+const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean }> = ({ 
+  children, 
+  adminOnly = false 
+}) => {
+  const { isAuthenticated, user } = useAuthStore();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (adminOnly && user?.role !== 'admin' && user?.role !== 'superadmin') {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <>{children}</>;
+};
 
 // Dashboard Router Component
 const DashboardRouter: React.FC = () => {
   const { user } = useAuthStore();
   
-  switch (user?.role) {
-    case 'superadmin':
-      return <SuperAdminDashboard />;
-    case 'admin':
-      return <AdminDashboard />;
-    case 'advisor':
-      return <AdvisorDashboard />;
-    case 'verification_org':
-      return <VerificationDashboard />;
-    case 'ngo':
-      return <NGODashboard />;
-    case 'carbon_provider':
-      return <ProviderDashboard />;
-    default:
-      return <UserDashboard />;
+  if (user?.role === 'admin' || user?.role === 'superadmin') {
+    return <AdminDashboard />;
   }
+  
+  return <UserDashboard />;
 };
 
 function App() {
@@ -108,7 +108,7 @@ function App() {
             <Route 
               path="/portfolio" 
               element={
-                <ProtectedRoute allowedRoles={['user', 'advisor', 'admin', 'superadmin']}>
+                <ProtectedRoute>
                   <PortfolioPage />
                 </ProtectedRoute>
               } 
@@ -124,7 +124,7 @@ function App() {
             <Route 
               path="/advisor" 
               element={
-                <ProtectedRoute allowedRoles={['user', 'admin', 'superadmin']}>
+                <ProtectedRoute>
                   <AdvisorPage />
                 </ProtectedRoute>
               } 
@@ -140,7 +140,7 @@ function App() {
             <Route 
               path="/staking" 
               element={
-                <ProtectedRoute allowedRoles={['user', 'advisor', 'admin', 'superadmin']}>
+                <ProtectedRoute>
                   <StakingPage />
                 </ProtectedRoute>
               } 
@@ -150,23 +150,7 @@ function App() {
             <Route 
               path="/admin" 
               element={
-                <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/profiles" 
-              element={
-                <ProtectedRoute allowedRoles={['superadmin']}>
-                  <UserProfiles />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                <ProtectedRoute adminOnly>
                   <AdminDashboard />
                 </ProtectedRoute>
               } 
@@ -174,7 +158,7 @@ function App() {
             <Route 
               path="/admin/kyc" 
               element={
-                <ProtectedRoute requiredPermission="users.edit">
+                <ProtectedRoute adminOnly>
                   <KYCManagement />
                 </ProtectedRoute>
               } 
@@ -182,7 +166,7 @@ function App() {
             <Route 
               path="/admin/projects" 
               element={
-                <ProtectedRoute requiredPermission="projects.approve">
+                <ProtectedRoute adminOnly>
                   <ProjectManagement />
                 </ProtectedRoute>
               } 
@@ -190,7 +174,7 @@ function App() {
             <Route 
               path="/admin/users" 
               element={
-                <ProtectedRoute requiredPermission="users.view">
+                <ProtectedRoute adminOnly>
                   <UserManagement />
                 </ProtectedRoute>
               } 
@@ -198,7 +182,7 @@ function App() {
             <Route 
               path="/admin/settings" 
               element={
-                <ProtectedRoute requiredPermission="system.settings">
+                <ProtectedRoute adminOnly>
                   <SystemSettings />
                 </ProtectedRoute>
               } 
@@ -206,7 +190,7 @@ function App() {
             <Route 
               path="/admin/content" 
               element={
-                <ProtectedRoute requiredPermission="content.edit">
+                <ProtectedRoute adminOnly>
                   <ContentManagement />
                 </ProtectedRoute>
               } 
@@ -214,7 +198,7 @@ function App() {
             <Route 
               path="/admin/editor" 
               element={
-                <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                <ProtectedRoute adminOnly>
                   <VisualEditor />
                 </ProtectedRoute>
               } 
