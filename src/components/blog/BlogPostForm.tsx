@@ -37,7 +37,7 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
     title: post?.title || '',
     content: post?.content || '',
     excerpt: post?.excerpt || '',
-    author: post?.author || user?.name || 'Admin',
+    author: post?.author || 'Admin',
     category: post?.category || '',
     tags: post?.tags.join(', ') || '',
     coverImage: post?.coverImage || '',
@@ -398,7 +398,6 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
                     value={formData.author}
                     onChange={(e) => setFormData({ ...formData, author: e.target.value })}
                     className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    placeholder={user?.name || 'Yazar adı'}
                   />
                 </div>
                 
