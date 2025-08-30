@@ -13,7 +13,6 @@ import { ICOPage } from './pages/ICOPage';
 import { AboutPage } from './pages/AboutPage';
 import { WhitepaperPage } from './pages/WhitepaperPage';
 import { BlogPage } from './pages/BlogPage';
-import { BlogDetailPage } from './pages/BlogDetailPage';
 import { PortfolioPage } from './pages/PortfolioPage';
 import { AdvisorPage } from './pages/AdvisorPage';
 import { WalletPage } from './pages/WalletPage';
@@ -27,7 +26,6 @@ import { UserManagement } from './pages/admin/UserManagement';
 import { SystemSettings } from './pages/admin/SystemSettings';
 import { ContentManagement } from './pages/admin/ContentManagement';
 import { VisualEditor } from './pages/admin/VisualEditor';
-import { BlogManagement } from './pages/admin/BlogManagement';
 import { useAuthStore } from './store/authStore';
 
 // Protected Route Component
@@ -95,7 +93,6 @@ function App() {
             <Route path="/trading" element={<TradingPage />} />
             <Route path="/ico" element={<ICOPage />} />
             <Route path="/blog" element={<BlogPage />} />
-            <Route path="/blog/:slug" element={<BlogDetailPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/whitepaper" element={<WhitepaperPage />} />
             
@@ -195,14 +192,6 @@ function App() {
               element={
                 <ProtectedRoute adminOnly>
                   <ContentManagement />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/blog" 
-              element={
-                <ProtectedRoute adminOnly>
-                  <BlogManagement />
                 </ProtectedRoute>
               } 
             />

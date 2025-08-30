@@ -146,20 +146,6 @@ export const Header: React.FC = () => {
                             {item.name}
                           </Link>
                         ))}
-                        <Link
-                          to="/admin/blog"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600"
-                          onClick={() => setIsProfileOpen(false)}
-                        >
-                          Blog Yönetimi
-                        </Link>
-                        <Link
-                          to="/admin/blog"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600"
-                          onClick={() => setIsProfileOpen(false)}
-                        >
-                          Blog Yönetimi
-                        </Link>
                       </>
                     )}
                     
