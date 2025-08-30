@@ -15,24 +15,13 @@ import {
   Phone
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { useDataStore } from '../../store/dataStore';
 import toast from 'react-hot-toast';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'user' | 'admin' | 'superadmin';
-  kycStatus: 'pending' | 'approved' | 'rejected';
-  isActive: boolean;
-  createdAt: string;
-  lastLogin?: string;
-  totalInvestment: number;
-  carbonCredits: number;
-}
 
 export const UserManagement: React.FC = () => {
   const { user } = useAuthStore();
-  const [users, setUsers] = useState<User[]>([]);
+  const { users, fetchUsers, updateUser, deleteUser } = useDataStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [kycFilter, setKycFilter] = useState('all');
@@ -40,49 +29,9 @@ export const UserManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Mock data - in real app, this would be an API call
-    const mockUsers: User[] = [
-      {
-        id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        role: 'user',
-        kycStatus: 'approved',
-        isActive: true,
-        createdAt: '2024-01-15T10:00:00Z',
-        lastLogin: '2024-01-20T14:30:00Z',
-        totalInvestment: 15000,
-        carbonCredits: 450
-      },
-      {
-        id: '2',
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-        role: 'user',
-        kycStatus: 'pending',
-        isActive: true,
-        createdAt: '2024-01-18T09:15:00Z',
-        lastLogin: '2024-01-19T16:45:00Z',
-        totalInvestment: 8500,
-        carbonCredits: 280
-      },
-      {
-        id: '3',
-        name: 'Admin User',
-        email: 'admin@decarbonize.world',
-        role: 'admin',
-        kycStatus: 'approved',
-        isActive: true,
-        createdAt: '2023-12-01T00:00:00Z',
-        lastLogin: '2024-01-20T08:00:00Z',
-        totalInvestment: 0,
-        carbonCredits: 0
-      }
-    ];
-    
-    setUsers(mockUsers);
+    fetchUsers();
     setIsLoading(false);
-  }, []);
+  }, [fetchUsers]);
 
   const filteredUsers = users.filter(u => {
     const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -92,16 +41,17 @@ export const UserManagement: React.FC = () => {
     return matchesSearch && matchesRole && matchesKyc;
   });
 
-  const handleToggleUserStatus = (userId: string) => {
-    setUsers(users.map(u => 
-      u.id === userId ? { ...u, isActive: !u.isActive } : u
-    ));
+  const handleToggleUserStatus = async (userId: string) => {
+    const userToUpdate = users.find(u => u.id === userId);
+    if (userToUpdate) {
+      await updateUser(userId, { isActive: !userToUpdate.isActive });
+    }
     toast.success('Kullanıcı durumu güncellendi');
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     if (window.confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
-      setUsers(users.filter(u => u.id !== userId));
+      await deleteUser(userId);
       toast.success('Kullanıcı silindi');
     }
   };
@@ -254,7 +204,7 @@ export const UserManagement: React.FC = () => {
                          user.kycStatus === 'rejected' ? 'Reddedildi' : 'Bekliyor'}
                       </span>
                     </td>
-                    <td className="py-4 px-6 font-medium">${user.totalInvestment.toLocaleString()}</td>
+                    <td className="py-4 px-6 font-medium">-</td>
                     <td className="py-4 px-6 text-sm text-gray-600">
                       {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('tr-TR') : 'Hiç'}
                     </td>

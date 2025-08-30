@@ -153,6 +153,19 @@ const mockUsers: User[] = [
     twoFactorEnabled: true,
     emailVerified: true,
     lastLogin: '2024-01-20T08:00:00Z'
+  },
+  {
+    id: '4',
+    email: 'superadmin@decarbonize.world',
+    name: 'Super Admin',
+    role: 'superadmin',
+    createdAt: '2023-11-01T00:00:00Z',
+    isActive: true,
+    kycStatus: 'approved',
+    language: 'tr',
+    twoFactorEnabled: true,
+    emailVerified: true,
+    lastLogin: '2024-01-20T07:00:00Z'
   }
 ];
 

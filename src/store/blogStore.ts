@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { BlogPost, BlogComment, BlogCategory, BlogStats, BlogFilters, PaginationInfo } from '../types/blog';
-import { useLocalStorage } from '../hooks/useLocalStorage';
 import { generateSlug, calculateReadTime, extractExcerpt } from '../utils/markdown';
 import toast from 'react-hot-toast';
 
@@ -485,8 +484,17 @@ export const useBlogStore = create<BlogState>((set, get) => {
         // Save to localStorage
         localStorage.setItem('blog-posts', JSON.stringify(updatedPosts));
         
+        // Update categories post count
+        const { categories } = get();
+        const updatedCategories = categories.map(cat => ({
+          ...cat,
+          postCount: updatedPosts.filter(p => p.category === cat.name && p.status === 'published').length
+        }));
+        localStorage.setItem('blog-categories', JSON.stringify(updatedCategories));
+        
         set({
           posts: updatedPosts,
+          categories: updatedCategories,
           stats: calculateStats(updatedPosts, comments),
           isLoading: false
         });
@@ -515,8 +523,17 @@ export const useBlogStore = create<BlogState>((set, get) => {
         // Save to localStorage
         localStorage.setItem('blog-posts', JSON.stringify(updatedPosts));
         
+        // Update categories post count
+        const { categories } = get();
+        const updatedCategories = categories.map(cat => ({
+          ...cat,
+          postCount: updatedPosts.filter(p => p.category === cat.name && p.status === 'published').length
+        }));
+        localStorage.setItem('blog-categories', JSON.stringify(updatedCategories));
+        
         set({
           posts: updatedPosts,
+          categories: updatedCategories,
           stats: calculateStats(updatedPosts, comments),
           isLoading: false
         });
@@ -534,9 +551,18 @@ export const useBlogStore = create<BlogState>((set, get) => {
         localStorage.setItem('blog-posts', JSON.stringify(updatedPosts));
         localStorage.setItem('blog-comments', JSON.stringify(updatedComments));
         
+        // Update categories post count
+        const { categories } = get();
+        const updatedCategories = categories.map(cat => ({
+          ...cat,
+          postCount: updatedPosts.filter(p => p.category === cat.name && p.status === 'published').length
+        }));
+        localStorage.setItem('blog-categories', JSON.stringify(updatedCategories));
+        
         set({
           posts: updatedPosts,
           comments: updatedComments,
+          categories: updatedCategories,
           stats: calculateStats(updatedPosts, updatedComments),
           isLoading: false
         });
