@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useDataStore } from '../../store/dataStore';
 import { useAuthStore } from '../../store/authStore';
+import { hasPermission } from '../../utils/permissions';
 import toast from 'react-hot-toast';
 
 export const ProjectManagement: React.FC = () => {
@@ -37,6 +38,11 @@ export const ProjectManagement: React.FC = () => {
   });
 
   const handleApproveProject = async (projectId: string) => {
+    if (!hasPermission(user, 'projects.approve')) {
+      toast.error('Proje onaylama yetkiniz bulunmamaktadır!');
+      return;
+    }
+    
     try {
       await updateProject(projectId, { 
         status: 'active',
@@ -50,6 +56,11 @@ export const ProjectManagement: React.FC = () => {
   };
 
   const handleRejectProject = async (projectId: string) => {
+    if (!hasPermission(user, 'projects.approve')) {
+      toast.error('Proje reddetme yetkiniz bulunmamaktadır!');
+      return;
+    }
+    
     try {
       await updateProject(projectId, { 
         status: 'rejected',
@@ -234,7 +245,7 @@ export const ProjectManagement: React.FC = () => {
                           <Eye className="w-4 h-4" />
                         </button>
                         
-                        {project.status === 'pending' && (
+                        {project.status === 'pending' && hasPermission(user, 'projects.approve') && (
                           <>
                             <button
                               onClick={() => handleApproveProject(project.id)}
@@ -253,13 +264,15 @@ export const ProjectManagement: React.FC = () => {
                           </>
                         )}
                         
-                        <button
-                          onClick={() => handleDeleteProject(project.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                          title="Sil"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {hasPermission(user, 'projects.edit') && (
+                          <button
+                            onClick={() => handleDeleteProject(project.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                            title="Sil"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

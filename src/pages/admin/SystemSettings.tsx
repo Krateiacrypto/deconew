@@ -76,10 +76,10 @@ export const SystemSettings: React.FC = () => {
 
   const tabs = [
     { id: 'general', name: 'Genel', icon: Settings },
-    { id: 'security', name: 'Güvenlik', icon: Shield },
+    ...(canAccessAdvancedSettings ? [{ id: 'security', name: 'Güvenlik', icon: Shield }] : []),
     { id: 'notifications', name: 'Bildirimler', icon: Bell },
     { id: 'trading', name: 'Trading', icon: Globe },
-    { id: 'blockchain', name: 'Blockchain', icon: Server }
+    ...(canAccessAdvancedSettings ? [{ id: 'blockchain', name: 'Blockchain', icon: Server }] : [])
   ];
 
   if (user?.role !== 'admin' && user?.role !== 'superadmin') {
@@ -92,6 +92,9 @@ export const SystemSettings: React.FC = () => {
       </div>
     );
   }
+
+  // Sadece süper admin tüm ayarlara erişebilir
+  const canAccessAdvancedSettings = user?.role === 'superadmin';
 
   const renderGeneralSettings = () => (
     <div className="space-y-6">

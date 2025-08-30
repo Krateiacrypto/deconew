@@ -26,20 +26,29 @@ export const Header: React.FC = () => {
 
   const userNavigation = [
     { name: t('nav.dashboard'), href: '/dashboard' },
-    { name: t('nav.portfolio'), href: '/portfolio' },
+    ...(user?.role === 'user' || user?.role === 'advisor' || user?.role === 'admin' || user?.role === 'superadmin' 
+      ? [{ name: t('nav.portfolio'), href: '/portfolio' }] : []),
     { name: t('nav.wallet'), href: '/wallet' },
-    { name: t('nav.advisor'), href: '/advisor' },
+    ...(user?.role === 'user' || user?.role === 'admin' || user?.role === 'superadmin' 
+      ? [{ name: t('nav.advisor'), href: '/advisor' }] : []),
     { name: 'KYC', href: '/kyc' },
-    { name: 'Staking', href: '/staking' },
+    ...(user?.role === 'user' || user?.role === 'advisor' || user?.role === 'admin' || user?.role === 'superadmin' 
+      ? [{ name: 'Staking', href: '/staking' }] : []),
   ];
 
   const adminNavigation = [
-    { name: t('admin.userManagement'), href: '/admin/users' },
-    { name: t('admin.projectManagement'), href: '/admin/projects' },
-    { name: t('admin.kycManagement'), href: '/admin/kyc' },
-    { name: 'İçerik Yönetimi', href: '/admin/content' },
-    { name: 'Görsel Editör', href: '/admin/editor' },
-    { name: t('admin.systemSettings'), href: '/admin/settings' },
+    ...(user?.role === 'admin' || user?.role === 'superadmin' 
+      ? [{ name: t('admin.userManagement'), href: '/admin/users' }] : []),
+    ...(user?.role === 'admin' || user?.role === 'superadmin' 
+      ? [{ name: t('admin.projectManagement'), href: '/admin/projects' }] : []),
+    ...(user?.role === 'admin' || user?.role === 'superadmin' 
+      ? [{ name: t('admin.kycManagement'), href: '/admin/kyc' }] : []),
+    ...(user?.role === 'admin' || user?.role === 'superadmin' 
+      ? [{ name: 'İçerik Yönetimi', href: '/admin/content' }] : []),
+    ...(user?.role === 'admin' || user?.role === 'superadmin' 
+      ? [{ name: 'Görsel Editör', href: '/admin/editor' }] : []),
+    ...(user?.role === 'superadmin' 
+      ? [{ name: t('admin.systemSettings'), href: '/admin/settings' }] : []),
   ];
 
   const formatAddress = (addr: string) => {
@@ -136,7 +145,7 @@ export const Header: React.FC = () => {
                     {(user?.role === 'admin' || user?.role === 'superadmin') && (
                       <>
                         <hr className="my-2" />
-                        {adminNavigation.map((item) => (
+                        {adminNavigation.filter(item => item.name).map((item) => (
                           <Link
                             key={item.name}
                             to={item.href}

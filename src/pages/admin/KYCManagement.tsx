@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useKYCStore } from '../../store/kycStore';
 import { useAuthStore } from '../../store/authStore';
+import { hasPermission } from '../../utils/permissions';
 import toast from 'react-hot-toast';
 
 export const KYCManagement: React.FC = () => {
@@ -36,6 +37,11 @@ export const KYCManagement: React.FC = () => {
   });
 
   const handleReview = async (applicationId: string, status: 'approved' | 'rejected', notes?: string) => {
+    if (!hasPermission(user, 'users.edit')) {
+      toast.error('KYC onaylama yetkiniz bulunmamaktadır!');
+      return;
+    }
+    
     try {
       await reviewKYCApplication(applicationId, status, notes);
       toast.success(`KYC başvurusu ${status === 'approved' ? 'onaylandı' : 'reddedildi'}`);
@@ -201,7 +207,7 @@ export const KYCManagement: React.FC = () => {
                           <Eye className="w-4 h-4" />
                         </button>
                         
-                        {application.status === 'pending' && (
+                        {application.status === 'pending' && hasPermission(user, 'users.edit') && (
                           <>
                             <button
                               onClick={() => handleReview(application.id, 'approved')}

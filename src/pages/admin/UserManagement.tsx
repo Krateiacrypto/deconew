@@ -15,19 +15,22 @@ import {
   Phone
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { hasPermission, getRoleDisplayName, getRoleColor } from '../../utils/permissions';
 import toast from 'react-hot-toast';
 
 interface User {
   id: string;
   name: string;
   email: string;
-  role: 'user' | 'admin' | 'superadmin';
+  role: 'superadmin' | 'admin' | 'advisor' | 'verification_org' | 'ngo' | 'carbon_provider' | 'user';
   kycStatus: 'pending' | 'approved' | 'rejected';
   isActive: boolean;
   createdAt: string;
   lastLogin?: string;
   totalInvestment: number;
   carbonCredits: number;
+  organizationName?: string;
+  organizationType?: string;
 }
 
 export const UserManagement: React.FC = () => {
@@ -70,13 +73,40 @@ export const UserManagement: React.FC = () => {
         id: '3',
         name: 'Admin User',
         email: 'admin@decarbonize.world',
-        role: 'admin',
+        role: 'superadmin',
         kycStatus: 'approved',
         isActive: true,
         createdAt: '2023-12-01T00:00:00Z',
         lastLogin: '2024-01-20T08:00:00Z',
         totalInvestment: 0,
         carbonCredits: 0
+      },
+      {
+        id: '4',
+        name: 'Dr. Sarah Johnson',
+        email: 'advisor@decarbonize.world',
+        role: 'advisor',
+        kycStatus: 'approved',
+        isActive: true,
+        createdAt: '2023-12-15T00:00:00Z',
+        lastLogin: '2024-01-20T09:30:00Z',
+        totalInvestment: 0,
+        carbonCredits: 0,
+        organizationName: 'Carbon Advisory Services'
+      },
+      {
+        id: '5',
+        name: 'Carbon Trust International',
+        email: 'verification@decarbonize.world',
+        role: 'verification_org',
+        kycStatus: 'approved',
+        isActive: true,
+        createdAt: '2023-11-01T00:00:00Z',
+        lastLogin: '2024-01-19T14:20:00Z',
+        totalInvestment: 0,
+        carbonCredits: 0,
+        organizationName: 'Carbon Trust International',
+        organizationType: 'Verification Body'
       }
     ];
     
@@ -123,8 +153,8 @@ export const UserManagement: React.FC = () => {
       color: 'yellow'
     },
     {
-      title: 'Admin Kullanıcı',
-      value: users.filter(u => u.role === 'admin' || u.role === 'superadmin').length,
+      title: 'Organizasyonlar',
+      value: users.filter(u => ['admin', 'superadmin', 'advisor', 'verification_org', 'ngo', 'carbon_provider'].includes(u.role)).length,
       color: 'purple'
     }
   ];
@@ -139,6 +169,15 @@ export const UserManagement: React.FC = () => {
       </div>
     );
   }
+
+  // Süper admin olmayan adminler sadece kendi seviyesinden düşük rolleri yönetebilir
+  const canManageUser = (targetUser: User) => {
+    if (user?.role === 'superadmin') return true;
+    if (user?.role === 'admin') {
+      return !['superadmin', 'admin'].includes(targetUser.role);
+    }
+    return false;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -187,8 +226,12 @@ export const UserManagement: React.FC = () => {
               >
                 <option value="all">Tüm Roller</option>
                 <option value="user">Kullanıcı</option>
+                <option value="advisor">Danışman</option>
+                <option value="verification_org">Doğrulama Kuruluşu</option>
+                <option value="ngo">STK</option>
+                <option value="carbon_provider">Karbon Sağlayıcı</option>
                 <option value="admin">Admin</option>
-                <option value="superadmin">Super Admin</option>
+                {user?.role === 'superadmin' && <option value="superadmin">Süper Admin</option>}
               </select>
 
               <select
@@ -218,6 +261,7 @@ export const UserManagement: React.FC = () => {
                 <tr>
                   <th className="text-left py-4 px-6 font-medium text-gray-600">Kullanıcı</th>
                   <th className="text-left py-4 px-6 font-medium text-gray-600">Rol</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-600">Organizasyon</th>
                   <th className="text-left py-4 px-6 font-medium text-gray-600">KYC Durumu</th>
                   <th className="text-left py-4 px-6 font-medium text-gray-600">Toplam Yatırım</th>
                   <th className="text-left py-4 px-6 font-medium text-gray-600">Son Giriş</th>
@@ -226,74 +270,86 @@ export const UserManagement: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((user) => (
-                  <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
+                {filteredUsers.map((targetUser) => (
+                  <tr key={targetUser.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-4 px-6">
                       <div>
-                        <p className="font-medium text-gray-900">{user.name}</p>
-                        <p className="text-sm text-gray-600">{user.email}</p>
+                        <p className="font-medium text-gray-900">{targetUser.name}</p>
+                        <p className="text-sm text-gray-600">{targetUser.email}</p>
                       </div>
                     </td>
                     <td className="py-4 px-6">
-                      <span className={`px-2 py-1 rounded-full text-sm font-medium ${
-                        user.role === 'superadmin' ? 'bg-purple-100 text-purple-800' :
-                        user.role === 'admin' ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {user.role === 'superadmin' ? 'Super Admin' :
-                         user.role === 'admin' ? 'Admin' : 'Kullanıcı'}
+                      <span className={`px-2 py-1 rounded-full text-sm font-medium ${getRoleColor(targetUser.role)}`}>
+                        {getRoleDisplayName(targetUser.role)}
                       </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div>
+                        {targetUser.organizationName && (
+                          <>
+                            <p className="font-medium text-gray-900 text-sm">{targetUser.organizationName}</p>
+                            <p className="text-xs text-gray-500">{targetUser.organizationType}</p>
+                          </>
+                        )}
+                        {!targetUser.organizationName && (
+                          <span className="text-gray-400 text-sm">-</span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-4 px-6">
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        user.kycStatus === 'approved' ? 'bg-emerald-100 text-emerald-700' :
-                        user.kycStatus === 'rejected' ? 'bg-red-100 text-red-700' :
+                        targetUser.kycStatus === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                        targetUser.kycStatus === 'rejected' ? 'bg-red-100 text-red-700' :
                         'bg-yellow-100 text-yellow-700'
                       }`}>
-                        {user.kycStatus === 'approved' ? 'Onaylı' :
-                         user.kycStatus === 'rejected' ? 'Reddedildi' : 'Bekliyor'}
+                        {targetUser.kycStatus === 'approved' ? 'Onaylı' :
+                         targetUser.kycStatus === 'rejected' ? 'Reddedildi' : 'Bekliyor'}
                       </span>
                     </td>
-                    <td className="py-4 px-6 font-medium">${user.totalInvestment.toLocaleString()}</td>
+                    <td className="py-4 px-4 font-medium">${targetUser.totalInvestment.toLocaleString()}</td>
                     <td className="py-4 px-6 text-sm text-gray-600">
-                      {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('tr-TR') : 'Hiç'}
+                      {targetUser.lastLogin ? new Date(targetUser.lastLogin).toLocaleDateString('tr-TR') : 'Hiç'}
                     </td>
                     <td className="py-4 px-6">
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        user.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                        targetUser.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
                       }`}>
-                        {user.isActive ? 'Aktif' : 'Pasif'}
+                        {targetUser.isActive ? 'Aktif' : 'Pasif'}
                       </span>
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex space-x-2">
                         <button
-                          onClick={() => setSelectedUser(user.id)}
+                          onClick={() => setSelectedUser(targetUser.id)}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
                           title="Görüntüle"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                         
-                        <button
-                          onClick={() => handleToggleUserStatus(user.id)}
-                          className={`p-2 rounded-lg ${
-                            user.isActive 
-                              ? 'text-red-600 hover:bg-red-50' 
-                              : 'text-emerald-600 hover:bg-emerald-50'
-                          }`}
-                          title={user.isActive ? 'Deaktif Et' : 'Aktif Et'}
-                        >
-                          {user.isActive ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
-                        </button>
-                        
-                        <button
-                          onClick={() => handleDeleteUser(user.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                          title="Sil"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {canManageUser(targetUser) && (
+                          <>
+                            <button
+                              onClick={() => handleToggleUserStatus(targetUser.id)}
+                              className={`p-2 rounded-lg ${
+                                targetUser.isActive 
+                                  ? 'text-red-600 hover:bg-red-50' 
+                                  : 'text-emerald-600 hover:bg-emerald-50'
+                              }`}
+                              title={targetUser.isActive ? 'Deaktif Et' : 'Aktif Et'}
+                            >
+                              {targetUser.isActive ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                            </button>
+                            
+                            <button
+                              onClick={() => handleDeleteUser(targetUser.id)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                              title="Sil"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
