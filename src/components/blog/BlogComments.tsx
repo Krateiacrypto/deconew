@@ -62,7 +62,7 @@ export const BlogComments: React.FC<BlogCommentsProps> = ({ postId }) => {
         postId,
         author: authorName,
         authorEmail: authorEmail,
-        authorAvatar: user.avatar,
+        authorAvatar: user?.avatar,
         content: newComment,
         parentId: undefined
       });
@@ -97,7 +97,7 @@ export const BlogComments: React.FC<BlogCommentsProps> = ({ postId }) => {
         postId,
         author: authorName,
         authorEmail: authorEmail,
-        authorAvatar: user.avatar,
+        authorAvatar: user?.avatar,
         content: replyContent,
         parentId
       });

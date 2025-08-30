@@ -145,7 +145,7 @@ const mockUsers: User[] = [
     id: '3',
     email: 'admin@decarbonize.world',
     name: 'Admin User',
-    role: 'superadmin',
+    role: 'admin',
     createdAt: '2023-12-01T00:00:00Z',
     isActive: true,
     kycStatus: 'approved',
@@ -156,34 +156,16 @@ const mockUsers: User[] = [
   },
   {
     id: '4',
-    email: 'advisor@decarbonize.world',
-    name: 'Dr. Sarah Johnson',
-    role: 'advisor',
-    createdAt: '2023-12-15T00:00:00Z',
-    isActive: true,
-    kycStatus: 'approved',
-    language: 'tr',
-    twoFactorEnabled: false,
-    emailVerified: true,
-    lastLogin: '2024-01-20T09:30:00Z',
-    organizationName: 'Carbon Advisory Services',
-    specializations: ['Carbon Credits', 'Sustainability', 'Investment Advisory']
-  },
-  {
-    id: '5',
-    email: 'verification@decarbonize.world',
-    name: 'Carbon Trust International',
-    role: 'verification_org',
+    email: 'superadmin@decarbonize.world',
+    name: 'Super Admin',
+    role: 'superadmin',
     createdAt: '2023-11-01T00:00:00Z',
     isActive: true,
     kycStatus: 'approved',
-    language: 'en',
+    language: 'tr',
     twoFactorEnabled: true,
     emailVerified: true,
-    lastLogin: '2024-01-19T14:20:00Z',
-    organizationName: 'Carbon Trust International',
-    organizationType: 'Verification Body',
-    certifications: ['ISO 14064', 'VCS', 'Gold Standard']
+    lastLogin: '2024-01-20T07:00:00Z'
   }
 ];
 

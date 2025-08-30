@@ -2,7 +2,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'superadmin' | 'admin' | 'advisor' | 'verification_org' | 'ngo' | 'carbon_provider' | 'user';
+  role: 'admin' | 'user' | 'superadmin';
   avatar?: string;
   createdAt: string;
   isActive: boolean;
@@ -14,31 +14,6 @@ export interface User {
   twoFactorEnabled: boolean;
   lastLogin?: string;
   emailVerified: boolean;
-  organizationName?: string;
-  organizationType?: string;
-  verificationLevel?: 'basic' | 'advanced' | 'premium';
-  assignedUsers?: string[];
-  specializations?: string[];
-  certifications?: string[];
-}
-
-export interface Permission {
-  id: string;
-  name: string;
-  description: string;
-  category: 'user_management' | 'project_management' | 'content_management' | 'system_settings' | 'financial' | 'verification' | 'advisory';
-  actions: string[];
-}
-
-export interface RolePermissions {
-  role: User['role'];
-  permissions: string[];
-  restrictions?: {
-    maxUsers?: number;
-    maxProjects?: number;
-    dataAccess?: 'own' | 'assigned' | 'all';
-    timeRestrictions?: string[];
-  };
 }
 
 export interface KYCDocument {
