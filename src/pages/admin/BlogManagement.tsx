@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Plus, 
@@ -12,7 +12,11 @@ import {
   BarChart3,
   TrendingUp,
   Users,
-  MessageCircle
+  MessageCircle,
+  Calendar,
+  Clock,
+  Download,
+  Upload
 } from 'lucide-react';
 import { BlogPost, BlogStats, BlogFilters, PaginationInfo } from '../../types/blog';
 import { useBlogStore } from '../../store/blogStore';
@@ -40,6 +44,7 @@ export const BlogManagement: React.FC = () => {
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<BlogFilters>({});
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'popular' | 'views'>('newest');
   const [pagination, setPagination] = useState<PaginationInfo>({
     currentPage: 1,
     totalPages: 1,
@@ -55,6 +60,26 @@ export const BlogManagement: React.FC = () => {
     loadPosts();
   }, [filters, pagination.currentPage, searchTerm]);
 
+  // Memoized sorted posts
+  const sortedPosts = useMemo(() => {
+    let sorted = [...posts];
+    
+    switch (sortBy) {
+      case 'oldest':
+        sorted.sort((a, b) => new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime());
+        break;
+      case 'popular':
+        sorted.sort((a, b) => b.likes - a.likes);
+        break;
+      case 'views':
+        sorted.sort((a, b) => b.views - a.views);
+        break;
+      default: // newest
+        sorted.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+    }
+    
+    return sorted;
+  }, [posts, sortBy]);
   const loadData = async () => {
     await Promise.all([
       fetchStats(),
@@ -122,8 +147,20 @@ export const BlogManagement: React.FC = () => {
     setEditingPost(null);
     loadPosts();
     fetchStats();
+    toast.success('Blog yazısı başarıyla kaydedildi!');
   };
 
+  const handleExportPosts = () => {
+    const dataStr = JSON.stringify(posts, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `blog-posts-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success('Blog yazıları dışa aktarıldı!');
+  };
   const handlePageChange = (page: number) => {
     setPagination({ ...pagination, currentPage: page });
   };
@@ -240,6 +277,17 @@ export const BlogManagement: React.FC = () => {
 
             <div className="flex items-center space-x-4">
               <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              >
+                <option value="newest">En Yeni</option>
+                <option value="oldest">En Eski</option>
+                <option value="popular">En Popüler</option>
+                <option value="views">En Çok Görüntülenen</option>
+              </select>
+              
+              <select
                 value={filters.category || ''}
                 onChange={(e) => setFilters({ ...filters, category: e.target.value || undefined })}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
@@ -261,6 +309,15 @@ export const BlogManagement: React.FC = () => {
                 <option value="published">Yayında</option>
                 <option value="draft">Taslak</option>
               </select>
+              
+              <button
+                onClick={handleExportPosts}
+                className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                title="Blog yazılarını dışa aktar"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">Dışa Aktar</span>
+              </button>
             </div>
           </div>
         </div>
@@ -281,7 +338,7 @@ export const BlogManagement: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {posts.map((post) => (
+                {sortedPosts.map((post) => (
                   <tr key={post.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-4 px-6">
                       <div className="flex items-start space-x-3">
@@ -295,6 +352,10 @@ export const BlogManagement: React.FC = () => {
                         <div>
                           <h3 className="font-medium text-gray-900 line-clamp-2">{post.title}</h3>
                           <p className="text-sm text-gray-600 line-clamp-1 mt-1">{post.excerpt}</p>
+                          <div className="flex items-center space-x-2 mt-1 text-xs text-gray-500">
+                            <Clock className="w-3 h-3" />
+                            <span>{post.readTime} dk</span>
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -328,19 +389,26 @@ export const BlogManagement: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-4 px-6">
-                      <div className="text-sm text-gray-600 space-y-1">
+                      <div className="text-sm text-gray-600 space-y-1 min-w-[80px]">
                         <div className="flex items-center space-x-1">
                           <Eye className="w-3 h-3" />
-                          <span>{post.views}</span>
+                          <span>{post.views.toLocaleString()}</span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <TrendingUp className="w-3 h-3" />
-                          <span>{post.likes}</span>
+                          <span>{post.likes.toLocaleString()}</span>
                         </div>
                       </div>
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-600">
-                      {new Date(post.updatedAt).toLocaleDateString('tr-TR')}
+                      <div className="space-y-1">
+                        <div>{new Date(post.publishedAt).toLocaleDateString('tr-TR')}</div>
+                        {post.updatedAt !== post.createdAt && (
+                          <div className="text-xs text-gray-500">
+                            Güncellendi: {new Date(post.updatedAt).toLocaleDateString('tr-TR')}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex space-x-2">
@@ -387,7 +455,7 @@ export const BlogManagement: React.FC = () => {
             </table>
           </div>
 
-          {posts.length === 0 && (
+          {sortedPosts.length === 0 && !isLoading && (
             <div className="text-center py-12">
               <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Blog yazısı bulunamadı</h3>

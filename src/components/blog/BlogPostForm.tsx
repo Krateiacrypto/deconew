@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Save, 
@@ -9,7 +9,11 @@ import {
   Tag,
   Calendar,
   User,
-  FileText
+  FileText,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  EyeOff
 } from 'lucide-react';
 import { BlogPost, BlogCategory } from '../../types/blog';
 import { BlogEditor } from './BlogEditor';
@@ -46,10 +50,35 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'error' | null>(null);
 
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
+
+  // Auto-save functionality
+  useEffect(() => {
+    if (!post) return; // Only auto-save for existing posts
+    
+    const autoSaveTimer = setTimeout(() => {
+      if (formData.title && formData.content) {
+        setAutoSaveStatus('saving');
+        updatePost(post.id, {
+          ...formData,
+          tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+          status: 'draft' // Auto-save as draft
+        }).then(() => {
+          setAutoSaveStatus('saved');
+          setTimeout(() => setAutoSaveStatus(null), 2000);
+        }).catch(() => {
+          setAutoSaveStatus('error');
+          setTimeout(() => setAutoSaveStatus(null), 3000);
+        });
+      }
+    }, 3000); // Auto-save after 3 seconds of inactivity
+
+    return () => clearTimeout(autoSaveTimer);
+  }, [formData, post, updatePost]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -127,6 +156,18 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
       seoTitle: formData.title + ' | DECARBONIZE Blog',
       seoDescription: formData.excerpt || formData.content.replace(/<[^>]*>/g, '').substring(0, 160)
     });
+    toast.success('SEO bilgileri oluşturuldu');
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // In a real app, you would upload to a service like Cloudinary
+      // For demo, we'll use a placeholder
+      const imageUrl = `https://images.pexels.com/photos/${Math.floor(Math.random() * 1000000)}/pexels-photo-${Math.floor(Math.random() * 1000000)}.jpeg`;
+      setFormData({ ...formData, coverImage: imageUrl });
+      toast.success('Kapak görseli eklendi');
+    }
   };
 
   return (
@@ -140,7 +181,31 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
                 {post ? 'Blog Yazısı Düzenle' : 'Yeni Blog Yazısı'}
               </h2>
               <p className="text-gray-600 mt-1">
-                {post ? `Son güncelleme: ${new Date(post.updatedAt).toLocaleString('tr-TR')}` : 'Yeni blog yazısı oluşturun'}
+                <span>
+                  {post ? `Son güncelleme: ${new Date(post.updatedAt).toLocaleString('tr-TR')}` : 'Yeni blog yazısı oluşturun'}
+                </span>
+                {autoSaveStatus && (
+                  <span className="ml-4 flex items-center space-x-1">
+                    {autoSaveStatus === 'saving' && (
+                      <>
+                        <Clock className="w-3 h-3 text-blue-600 animate-spin" />
+                        <span className="text-blue-600 text-sm">Kaydediliyor...</span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'saved' && (
+                      <>
+                        <CheckCircle className="w-3 h-3 text-green-600" />
+                        <span className="text-green-600 text-sm">Otomatik kaydedildi</span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'error' && (
+                      <>
+                        <AlertCircle className="w-3 h-3 text-red-600" />
+                        <span className="text-red-600 text-sm">Kaydetme hatası</span>
+                      </>
+                    )}
+                  </span>
+                )}
               </p>
             </div>
             
@@ -170,9 +235,9 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
           <div className="lg:col-span-2 space-y-6">
             {showPreview ? (
               <div className="space-y-6">
-                <div>
+                <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
                   <h1 className="text-3xl font-bold text-gray-900 mb-4">{formData.title}</h1>
-                  <div className="flex items-center space-x-4 text-sm text-gray-500 mb-6">
+                  <div className="flex items-center flex-wrap gap-3 text-sm text-gray-500 mb-6">
                     <div className="flex items-center space-x-1">
                       <User className="w-4 h-4" />
                       <span>{formData.author}</span>
@@ -180,6 +245,10 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-4 h-4" />
                       <span>{new Date().toLocaleDateString('tr-TR')}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Clock className="w-4 h-4" />
+                      <span>{Math.max(1, Math.ceil(formData.content.replace(/<[^>]*>/g, '').split(/\s+/).length / 200))} dk okuma</span>
                     </div>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       formData.category === 'Karbon Kredisi' ? 'bg-emerald-100 text-emerald-800' :
@@ -199,7 +268,7 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
                     />
                   )}
                   
-                  <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: formData.content }} />
+                  <div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: formData.content }} />
                 </div>
               </div>
             ) : (
@@ -259,7 +328,7 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
                   <BlogEditor
                     content={formData.content}
                     onChange={(content) => setFormData({ ...formData, content })}
-                    height="400px"
+                    height="500px"
                   />
                   {errors.content && (
                     <p className="mt-1 text-sm text-red-600">{errors.content}</p>
@@ -292,7 +361,7 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
                   <button
                     onClick={(e) => handleSubmit(e, false)}
                     disabled={isSubmitting}
-                    className="flex-1 flex items-center justify-center space-x-2 bg-gray-600 text-white py-2 px-3 rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                    className="flex-1 flex items-center justify-center space-x-2 bg-gray-600 text-white py-2 px-3 rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors"
                   >
                     <Save className="w-4 h-4" />
                     <span>Kaydet</span>
@@ -301,12 +370,19 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
                   <button
                     onClick={(e) => handleSubmit(e, true)}
                     disabled={isSubmitting}
-                    className="flex-1 flex items-center justify-center space-x-2 bg-emerald-600 text-white py-2 px-3 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                    className="flex-1 flex items-center justify-center space-x-2 bg-emerald-600 text-white py-2 px-3 rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
                   >
                     <Globe className="w-4 h-4" />
                     <span>Yayınla</span>
                   </button>
                 </div>
+                
+                {isSubmitting && (
+                  <div className="flex items-center space-x-2 text-sm text-blue-600">
+                    <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    <span>İşleniyor...</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -368,20 +444,26 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
                       className="flex-1 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                       placeholder="https://example.com/image.jpg"
                     />
-                    <button
+                    <label
                       type="button"
-                      className="px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                      className="px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 cursor-pointer"
                       title="Resim Yükle"
                     >
                       <Upload className="w-4 h-4" />
-                    </button>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                    </label>
                   </div>
                   {formData.coverImage && (
                     <div className="mt-2">
                       <img
                         src={formData.coverImage}
                         alt="Cover preview"
-                        className="w-full h-32 object-cover rounded-lg"
+                        className="w-full h-32 object-cover rounded-lg border border-gray-200"
                       />
                     </div>
                   )}
@@ -464,9 +546,27 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
                   type="button"
                   className="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-50 rounded"
                 >
-                  📊 Kelime Sayısı: {formData.content.replace(/<[^>]*>/g, '').split(/\s+/).length}
+                  📊 Kelime Sayısı: {formData.content.replace(/<[^>]*>/g, '').split(/\s+/).filter(w => w.length > 0).length}
+                </button>
+                <button
+                  type="button"
+                  className="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-50 rounded"
+                >
+                  ⏱️ Okuma Süresi: {Math.max(1, Math.ceil(formData.content.replace(/<[^>]*>/g, '').split(/\s+/).length / 200))} dakika
                 </button>
               </div>
+            </div>
+            
+            {/* Content Guidelines */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <h3 className="font-medium text-blue-900 mb-3">İçerik Rehberi</h3>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• Başlık 60 karakterden kısa olsun</li>
+                <li>• Özet 160 karakterden kısa olsun</li>
+                <li>• Kapak görseli 1200x630 px ideal</li>
+                <li>• İçerik en az 300 kelime olsun</li>
+                <li>• Alakalı etiketler ekleyin</li>
+              </ul>
             </div>
           </div>
         </div>

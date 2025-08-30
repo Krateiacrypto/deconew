@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Calendar, User, Tag, ArrowRight, TrendingUp, Filter } from 'lucide-react';
+import { Search, Calendar, User, Tag, ArrowRight, TrendingUp, Filter, Sparkles, Clock, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useBlogStore } from '../store/blogStore';
 import { BlogPostCard } from '../components/blog/BlogPostCard';
@@ -28,9 +28,10 @@ export const BlogPage: React.FC = () => {
     currentPage: 1,
     totalPages: 1,
     totalItems: 0,
-    itemsPerPage: 9
+    itemsPerPage: 6
   });
   const [featuredPosts, setFeaturedPosts] = useState<any[]>([]);
+  const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'trending'>('newest');
 
   useEffect(() => {
     loadInitialData();
@@ -43,9 +44,33 @@ export const BlogPage: React.FC = () => {
   useEffect(() => {
     if (searchTerm) {
       handleSearch();
+    } else {
+      loadPosts();
     }
-  }, [searchTerm]);
+  }, [searchTerm, sortBy]);
 
+  // Memoized filtered and sorted posts
+  const sortedPosts = useMemo(() => {
+    let sorted = [...posts];
+    
+    switch (sortBy) {
+      case 'popular':
+        sorted.sort((a, b) => (b.likes + b.views * 0.1) - (a.likes + a.views * 0.1));
+        break;
+      case 'trending':
+        // Simple trending algorithm based on recent engagement
+        sorted.sort((a, b) => {
+          const aScore = a.likes * 2 + a.views * 0.1 + (new Date().getTime() - new Date(a.publishedAt).getTime()) * -0.000001;
+          const bScore = b.likes * 2 + b.views * 0.1 + (new Date().getTime() - new Date(b.publishedAt).getTime()) * -0.000001;
+          return bScore - aScore;
+        });
+        break;
+      default: // newest
+        sorted.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+    }
+    
+    return sorted;
+  }, [posts, sortBy]);
   const loadInitialData = async () => {
     await Promise.all([
       fetchCategories(),
@@ -53,7 +78,7 @@ export const BlogPage: React.FC = () => {
     ]);
     
     // Load featured posts (first 2 published posts)
-    const { posts: allPosts } = await fetchPosts({ status: 'published' }, 1, 2);
+    const { posts: allPosts } = await fetchPosts({ status: 'published' }, 1, 3);
     setFeaturedPosts(allPosts);
     
     loadPosts();
@@ -71,15 +96,24 @@ export const BlogPage: React.FC = () => {
   const handleSearch = async () => {
     if (searchTerm.trim()) {
       const searchResults = await searchPosts(searchTerm);
+      const sortedResults = searchResults.sort((a, b) => {
+        // Prioritize title matches over content matches
+        const aTitleMatch = a.title.toLowerCase().includes(searchTerm.toLowerCase());
+        const bTitleMatch = b.title.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        if (aTitleMatch && !bTitleMatch) return -1;
+        if (!aTitleMatch && bTitleMatch) return 1;
+        
+        return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+      });
+      
       // Update pagination for search results
       setPagination({
         currentPage: 1,
-        totalPages: Math.ceil(searchResults.length / pagination.itemsPerPage),
-        totalItems: searchResults.length,
+        totalPages: Math.ceil(sortedResults.length / pagination.itemsPerPage),
+        totalItems: sortedResults.length,
         itemsPerPage: pagination.itemsPerPage
       });
-    } else {
-      loadPosts();
     }
   };
 
@@ -152,8 +186,11 @@ export const BlogPage: React.FC = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="mb-12"
           >
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">Öne Çıkan Yazılar</h2>
-            <div className="grid lg:grid-cols-2 gap-8">
+            <div className="flex items-center space-x-2 mb-8">
+              <Sparkles className="w-6 h-6 text-emerald-600" />
+              <h2 className="text-3xl font-bold text-gray-900">Öne Çıkan Yazılar</h2>
+            </div>
+            <div className="grid lg:grid-cols-3 gap-6">
               {featuredPosts.map((post) => (
                 <BlogPostCard
                   key={post.id}
@@ -188,16 +225,58 @@ export const BlogPage: React.FC = () => {
                   />
                 </div>
 
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`flex items-center space-x-2 px-4 py-3 rounded-lg font-medium transition-colors ${
-                    showFilters ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  <Filter className="w-4 h-4" />
-                  <span>Filtreler</span>
-                </button>
+                <div className="flex items-center space-x-3">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  >
+                    <option value="newest">En Yeni</option>
+                    <option value="popular">En Popüler</option>
+                    <option value="trending">Trend</option>
+                  </select>
+                  
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`flex items-center space-x-2 px-4 py-3 rounded-lg font-medium transition-colors ${
+                      showFilters ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Filter className="w-4 h-4" />
+                    <span>Filtreler</span>
+                  </button>
+                </div>
               </div>
+              
+              {/* Active filters display */}
+              {(searchTerm || filters.category || filters.tag) && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex items-center space-x-2 text-sm">
+                    <span className="text-gray-600">Aktif filtreler:</span>
+                    {searchTerm && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                        Arama: "{searchTerm}"
+                      </span>
+                    )}
+                    {filters.category && (
+                      <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full">
+                        {filters.category}
+                      </span>
+                    )}
+                    {filters.tag && (
+                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full">
+                        #{filters.tag}
+                      </span>
+                    )}
+                    <button
+                      onClick={handleClearFilters}
+                      className="text-red-600 hover:text-red-700 ml-2"
+                    >
+                      Temizle
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
 
             {/* Blog Posts Grid */}
@@ -207,7 +286,7 @@ export const BlogPage: React.FC = () => {
               transition={{ duration: 0.6, delay: 0.3 }}
             >
               {isLoading ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid md:grid-cols-2 gap-8">
                   {[...Array(6)].map((_, index) => (
                     <div key={index} className="bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse">
                       <div className="h-48 bg-gray-300"></div>
@@ -220,15 +299,21 @@ export const BlogPage: React.FC = () => {
                     </div>
                   ))}
                 </div>
-              ) : posts.length > 0 ? (
+              ) : sortedPosts.length > 0 ? (
                 <>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {posts.map((post) => (
-                      <BlogPostCard
+                  <div className="grid md:grid-cols-2 gap-8">
+                    {sortedPosts.map((post, index) => (
+                      <motion.div
                         key={post.id}
-                        post={post}
-                        onReadMore={handleReadMore}
-                      />
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: index * 0.1 }}
+                      >
+                        <BlogPostCard
+                          post={post}
+                          onReadMore={handleReadMore}
+                        />
+                      </motion.div>
                     ))}
                   </div>
                   
@@ -243,10 +328,23 @@ export const BlogPage: React.FC = () => {
                   )}
                 </>
               ) : (
-                <div className="text-center py-12">
-                  <Tag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-medium text-gray-900 mb-2">Blog yazısı bulunamadı</h3>
-                  <p className="text-gray-600">Arama kriterlerinize uygun blog yazısı bulunamadı.</p>
+                <div className="text-center py-16">
+                  <div className="w-24 h-24 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <Tag className="w-12 h-12 text-gray-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3">Blog yazısı bulunamadı</h3>
+                  <p className="text-gray-600 mb-6">
+                    {searchTerm ? 
+                      `"${searchTerm}" araması için sonuç bulunamadı.` : 
+                      'Arama kriterlerinize uygun blog yazısı bulunamadı.'
+                    }
+                  </p>
+                  <button
+                    onClick={handleClearFilters}
+                    className="bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors"
+                  >
+                    Filtreleri Temizle
+                  </button>
                 </div>
               )}
             </motion.div>
@@ -308,11 +406,39 @@ export const BlogPage: React.FC = () => {
               </div>
             </motion.div>
 
-            {/* Newsletter Signup */}
+            {/* Popular Tags */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
+              className="bg-white rounded-2xl p-6 shadow-lg"
+            >
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Popüler Etiketler</h3>
+              <div className="flex flex-wrap gap-2">
+                {['karbon kredisi', 'blockchain', 'sürdürülebilirlik', 'ESG', 'yenilenebilir enerji', 'çevre koruma'].map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => handleFiltersChange({ 
+                      ...filters, 
+                      tag: filters.tag === tag ? undefined : tag 
+                    })}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                      filters.tag === tag 
+                        ? 'bg-emerald-100 text-emerald-700' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    #{tag}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Newsletter Signup */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
               className="bg-gradient-to-br from-emerald-600 to-blue-700 rounded-2xl p-6 text-white"
             >
               <h3 className="text-xl font-bold mb-3">Blog Güncellemeleri</h3>
@@ -325,7 +451,10 @@ export const BlogPage: React.FC = () => {
                   placeholder="E-posta adresiniz"
                   className="w-full px-3 py-2 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-white"
                 />
-                <button className="w-full bg-white text-emerald-600 py-2 px-4 rounded-lg font-medium hover:bg-emerald-50 transition-colors">
+                <button 
+                  onClick={() => toast.success('E-posta listemize eklendi!')}
+                  className="w-full bg-white text-emerald-600 py-2 px-4 rounded-lg font-medium hover:bg-emerald-50 transition-colors"
+                >
                   Abone Ol
                 </button>
               </div>

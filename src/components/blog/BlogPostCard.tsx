@@ -43,12 +43,21 @@ export const BlogPostCard: React.FC<BlogPostCardProps> = ({
           text: post.excerpt,
           url: `${window.location.origin}/blog/${post.slug}`
         });
+        toast.success('Paylaşıldı!');
       } catch (error) {
-        // Fallback to clipboard
-        navigator.clipboard.writeText(`${window.location.origin}/blog/${post.slug}`);
+        if (error.name !== 'AbortError') {
+          // Fallback to clipboard
+          await navigator.clipboard.writeText(`${window.location.origin}/blog/${post.slug}`);
+          toast.success('Link kopyalandı!');
+        }
       }
     } else {
-      navigator.clipboard.writeText(`${window.location.origin}/blog/${post.slug}`);
+      try {
+        await navigator.clipboard.writeText(`${window.location.origin}/blog/${post.slug}`);
+        toast.success('Link kopyalandı!');
+      } catch (error) {
+        toast.error('Link kopyalanamadı');
+      }
     }
   };
 
@@ -73,8 +82,9 @@ export const BlogPostCard: React.FC<BlogPostCardProps> = ({
   if (variant === 'compact') {
     return (
       <motion.div
-        whileHover={{ y: -2 }}
-        className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer"
+        whileHover={{ y: -2, scale: 1.02 }}
+        transition={{ duration: 0.2 }}
+        className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg"
         onClick={() => onReadMore(post.slug)}
       >
         <div className="p-4">
@@ -88,11 +98,14 @@ export const BlogPostCard: React.FC<BlogPostCardProps> = ({
             )}
             <div className="flex-1 min-w-0">
               <h3 className="font-medium text-gray-900 line-clamp-2 mb-1">{post.title}</h3>
-              <div className="flex items-center space-x-2 text-xs text-gray-500">
+              <div className="flex items-center space-x-2 text-xs text-gray-500 mb-2">
                 <span>{post.author}</span>
                 <span>•</span>
                 <span>{formatDate(post.publishedAt)}</span>
+                <span>•</span>
+                <span>{post.readTime} dk</span>
               </div>
+              <p className="text-xs text-gray-600 line-clamp-2">{post.excerpt}</p>
             </div>
           </div>
         </div>
@@ -103,8 +116,9 @@ export const BlogPostCard: React.FC<BlogPostCardProps> = ({
   if (variant === 'featured') {
     return (
       <motion.div
-        whileHover={{ y: -4 }}
-        className="bg-white rounded-2xl shadow-lg overflow-hidden cursor-pointer"
+        whileHover={{ y: -4, scale: 1.02 }}
+        transition={{ duration: 0.3 }}
+        className="bg-white rounded-2xl shadow-lg overflow-hidden cursor-pointer hover:shadow-2xl"
         onClick={() => onReadMore(post.slug)}
       >
         <div className="relative h-64 overflow-hidden">
@@ -122,7 +136,7 @@ export const BlogPostCard: React.FC<BlogPostCardProps> = ({
         </div>
         
         <div className="p-6">
-          <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+          <div className="flex items-center flex-wrap gap-3 text-sm text-gray-500 mb-3">
             <div className="flex items-center space-x-1">
               <Calendar className="w-4 h-4" />
               <span>{formatDate(post.publishedAt)}</span>
@@ -140,23 +154,29 @@ export const BlogPostCard: React.FC<BlogPostCardProps> = ({
           <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2">{post.title}</h3>
           <p className="text-gray-600 mb-4 line-clamp-3">{post.excerpt}</p>
           
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-3">
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${getCategoryColor(post.category)}`}>
               {post.category}
             </span>
             
             {showActions && (
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-1 text-gray-500">
                   <Eye className="w-4 h-4" />
                   <span className="text-sm">{post.views}</span>
                 </div>
                 <button
                   onClick={handleLike}
-                  className="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors"
+                  className="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors transform hover:scale-110"
                 >
                   <Heart className="w-4 h-4" />
                   <span className="text-sm">{post.likes}</span>
+                </button>
+                <button
+                  onClick={handleShare}
+                  className="flex items-center space-x-1 text-gray-500 hover:text-blue-500 transition-colors transform hover:scale-110"
+                >
+                  <Share2 className="w-4 h-4" />
                 </button>
               </div>
             )}
@@ -168,8 +188,9 @@ export const BlogPostCard: React.FC<BlogPostCardProps> = ({
 
   return (
     <motion.div
-      whileHover={{ y: -2 }}
-      className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer group"
+      whileHover={{ y: -3, scale: 1.02 }}
+      transition={{ duration: 0.2 }}
+      className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer group hover:shadow-xl"
       onClick={() => onReadMore(post.slug)}
     >
       <div className="relative h-48 overflow-hidden">
@@ -179,10 +200,15 @@ export const BlogPostCard: React.FC<BlogPostCardProps> = ({
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+        
+        {/* Reading time badge */}
+        <div className="absolute top-3 right-3 bg-black/70 text-white px-2 py-1 rounded-full text-xs">
+          {post.readTime} dk
+        </div>
       </div>
       
       <div className="p-6">
-        <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+        <div className="flex items-center flex-wrap gap-3 text-sm text-gray-500 mb-3">
           <div className="flex items-center space-x-1">
             <Calendar className="w-4 h-4" />
             <span>{formatDate(post.publishedAt)}</span>
@@ -191,10 +217,6 @@ export const BlogPostCard: React.FC<BlogPostCardProps> = ({
             <User className="w-4 h-4" />
             <span>{post.author}</span>
           </div>
-          <div className="flex items-center space-x-1">
-            <Clock className="w-4 h-4" />
-            <span>{post.readTime} dk</span>
-          </div>
         </div>
         
         <h3 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-emerald-600 transition-colors">
@@ -202,27 +224,27 @@ export const BlogPostCard: React.FC<BlogPostCardProps> = ({
         </h3>
         <p className="text-gray-600 mb-4 line-clamp-3">{post.excerpt}</p>
         
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <span className={`px-3 py-1 rounded-full text-sm font-medium ${getCategoryColor(post.category)}`}>
             {post.category}
           </span>
           
           {showActions && (
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-1 text-gray-500">
                 <Eye className="w-4 h-4" />
                 <span className="text-sm">{post.views}</span>
               </div>
               <button
                 onClick={handleLike}
-                className="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors"
+                className="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors transform hover:scale-110"
               >
                 <Heart className="w-4 h-4" />
                 <span className="text-sm">{post.likes}</span>
               </button>
               <button
                 onClick={handleShare}
-                className="flex items-center space-x-1 text-gray-500 hover:text-blue-500 transition-colors"
+                className="flex items-center space-x-1 text-gray-500 hover:text-blue-500 transition-colors transform hover:scale-110"
               >
                 <Share2 className="w-4 h-4" />
               </button>

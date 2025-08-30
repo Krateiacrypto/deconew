@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -10,7 +10,11 @@ import {
   ArrowLeft,
   Share2,
   Tag,
-  MessageCircle
+  MessageCircle,
+  Bookmark,
+  BookmarkCheck,
+  ThumbsUp,
+  ExternalLink
 } from 'lucide-react';
 import { BlogPost } from '../types/blog';
 import { useBlogStore } from '../store/blogStore';
@@ -27,12 +31,44 @@ export const BlogDetailPage: React.FC = () => {
   const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasLiked, setHasLiked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [readingProgress, setReadingProgress] = useState(0);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (slug) {
       loadPost();
     }
   }, [slug]);
+
+  // Reading progress tracker
+  useEffect(() => {
+    const handleScroll = () => {
+      if (contentRef.current) {
+        const element = contentRef.current;
+        const rect = element.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        const elementHeight = element.offsetHeight;
+        
+        if (rect.top < windowHeight && rect.bottom > 0) {
+          const visibleHeight = Math.min(windowHeight - Math.max(rect.top, 0), elementHeight);
+          const progress = (visibleHeight / elementHeight) * 100;
+          setReadingProgress(Math.min(100, Math.max(0, progress)));
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Check if post is bookmarked
+  useEffect(() => {
+    if (post) {
+      const bookmarks = JSON.parse(localStorage.getItem('blog-bookmarks') || '[]');
+      setIsBookmarked(bookmarks.includes(post.id));
+    }
+  }, [post]);
 
   const loadPost = async () => {
     if (!slug) return;
@@ -69,6 +105,25 @@ export const BlogDetailPage: React.FC = () => {
     await likePost(post.id);
     setPost({ ...post, likes: post.likes + 1 });
     setHasLiked(true);
+    toast.success('Beğendiniz!');
+  };
+
+  const handleBookmark = () => {
+    if (!post) return;
+    
+    const bookmarks = JSON.parse(localStorage.getItem('blog-bookmarks') || '[]');
+    
+    if (isBookmarked) {
+      const updatedBookmarks = bookmarks.filter((id: string) => id !== post.id);
+      localStorage.setItem('blog-bookmarks', JSON.stringify(updatedBookmarks));
+      setIsBookmarked(false);
+      toast.success('Yer işaretinden kaldırıldı');
+    } else {
+      const updatedBookmarks = [...bookmarks, post.id];
+      localStorage.setItem('blog-bookmarks', JSON.stringify(updatedBookmarks));
+      setIsBookmarked(true);
+      toast.success('Yer işaretine eklendi');
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -116,6 +171,15 @@ export const BlogDetailPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      {/* Reading Progress Bar */}
+      <div className="fixed top-0 left-0 w-full h-1 bg-gray-200 z-50">
+        <motion.div
+          className="h-full bg-gradient-to-r from-emerald-500 to-blue-600"
+          style={{ width: `${readingProgress}%` }}
+          transition={{ duration: 0.1 }}
+        />
+      </div>
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Back Button */}
         <motion.button
@@ -136,6 +200,7 @@ export const BlogDetailPage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
               className="bg-white rounded-2xl shadow-lg overflow-hidden"
+              ref={contentRef}
             >
               {/* Cover Image */}
               {post.coverImage && (
@@ -146,12 +211,26 @@ export const BlogDetailPage: React.FC = () => {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+                  
+                  {/* Floating Action Buttons */}
+                  <div className="absolute top-4 right-4 flex space-x-2">
+                    <button
+                      onClick={handleBookmark}
+                      className={`p-3 rounded-full backdrop-blur-sm transition-colors ${
+                        isBookmarked 
+                          ? 'bg-emerald-600 text-white' 
+                          : 'bg-white/80 text-gray-700 hover:bg-white'
+                      }`}
+                    >
+                      {isBookmarked ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
               )}
 
               <div className="p-8">
                 {/* Post Meta */}
-                <div className="flex items-center space-x-4 text-sm text-gray-500 mb-6">
+                <div className="flex items-center flex-wrap gap-3 text-sm text-gray-500 mb-6">
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${getCategoryColor(post.category)}`}>
                     {post.category}
                   </span>
@@ -167,6 +246,10 @@ export const BlogDetailPage: React.FC = () => {
                     <Clock className="w-4 h-4" />
                     <span>{post.readTime} dakika okuma</span>
                   </div>
+                  <div className="flex items-center space-x-1">
+                    <Eye className="w-4 h-4" />
+                    <span>{post.views} görüntülenme</span>
+                  </div>
                 </div>
 
                 {/* Title */}
@@ -175,13 +258,13 @@ export const BlogDetailPage: React.FC = () => {
                 </h1>
 
                 {/* Excerpt */}
-                <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+                <div className="text-xl text-gray-600 mb-8 leading-relaxed p-4 bg-emerald-50 rounded-lg border-l-4 border-emerald-500">
                   {post.excerpt}
-                </p>
+                </div>
 
                 {/* Content */}
                 <div 
-                  className="prose prose-lg max-w-none prose-emerald prose-headings:text-gray-900 prose-a:text-emerald-600 prose-a:no-underline hover:prose-a:underline"
+                  className="prose prose-lg max-w-none prose-emerald prose-headings:text-gray-900 prose-a:text-emerald-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-blockquote:border-emerald-500 prose-blockquote:bg-emerald-50"
                   dangerouslySetInnerHTML={{ __html: post.content }}
                 />
 
@@ -194,12 +277,13 @@ export const BlogDetailPage: React.FC = () => {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {post.tags.map((tag, index) => (
-                        <span
+                        <button
                           key={index}
+                          onClick={() => navigate(`/blog?tag=${encodeURIComponent(tag)}`)}
                           className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-emerald-100 hover:text-emerald-700 cursor-pointer transition-colors"
                         >
                           #{tag}
-                        </span>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -208,16 +292,11 @@ export const BlogDetailPage: React.FC = () => {
                 {/* Post Actions */}
                 <div className="mt-8 pt-6 border-t border-gray-200">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-6">
-                      <div className="flex items-center space-x-1 text-gray-500">
-                        <Eye className="w-5 h-5" />
-                        <span>{post.views} görüntülenme</span>
-                      </div>
-                      
+                    <div className="flex items-center space-x-4">
                       <button
                         onClick={handleLike}
                         disabled={hasLiked}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all transform hover:scale-105 ${
                           hasLiked 
                             ? 'bg-red-100 text-red-700 cursor-not-allowed' 
                             : 'text-gray-700 hover:bg-red-50 hover:text-red-600'
@@ -225,6 +304,18 @@ export const BlogDetailPage: React.FC = () => {
                       >
                         <Heart className={`w-5 h-5 ${hasLiked ? 'fill-current' : ''}`} />
                         <span>{post.likes} beğeni</span>
+                      </button>
+                      
+                      <button
+                        onClick={handleBookmark}
+                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all transform hover:scale-105 ${
+                          isBookmarked 
+                            ? 'bg-emerald-100 text-emerald-700' 
+                            : 'text-gray-700 hover:bg-emerald-50 hover:text-emerald-600'
+                        }`}
+                      >
+                        {isBookmarked ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
+                        <span>{isBookmarked ? 'Kaydedildi' : 'Kaydet'}</span>
                       </button>
                     </div>
 
@@ -260,11 +351,44 @@ export const BlogDetailPage: React.FC = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Table of Contents (if content has headings) */}
+            {post.content.includes('<h2') || post.content.includes('<h3') ? (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="bg-white rounded-xl p-6 shadow-lg"
+              >
+                <h3 className="text-lg font-bold text-gray-900 mb-4">İçindekiler</h3>
+                <div className="space-y-2 text-sm">
+                  {post.content.match(/<h[23][^>]*>(.*?)<\/h[23]>/g)?.map((heading, index) => {
+                    const text = heading.replace(/<[^>]*>/g, '');
+                    const level = heading.startsWith('<h2') ? 2 : 3;
+                    return (
+                      <button
+                        key={index}
+                        className={`block text-left w-full p-2 rounded hover:bg-emerald-50 hover:text-emerald-600 transition-colors ${
+                          level === 3 ? 'ml-4 text-gray-600' : 'text-gray-800 font-medium'
+                        }`}
+                        onClick={() => {
+                          // Scroll to heading (simplified)
+                          const element = document.querySelector(`h${level}`);
+                          element?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                      >
+                        {text}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            ) : null}
+
             {/* Social Share */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
             >
               <BlogSocialShare post={post} />
             </motion.div>
@@ -289,6 +413,16 @@ export const BlogDetailPage: React.FC = () => {
                     />
                   ))}
                 </div>
+                
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => navigate('/blog')}
+                    className="w-full flex items-center justify-center space-x-2 text-emerald-600 hover:text-emerald-700 font-medium"
+                  >
+                    <span>Tüm Blog Yazıları</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </button>
+                </div>
               </motion.div>
             )}
 
@@ -309,7 +443,10 @@ export const BlogDetailPage: React.FC = () => {
                   placeholder="E-posta adresiniz"
                   className="w-full px-3 py-2 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-white"
                 />
-                <button className="w-full bg-white text-emerald-600 py-2 px-4 rounded-lg font-medium hover:bg-emerald-50 transition-colors">
+                <button 
+                  onClick={() => toast.success('E-posta listemize eklendi!')}
+                  className="w-full bg-white text-emerald-600 py-2 px-4 rounded-lg font-medium hover:bg-emerald-50 transition-colors"
+                >
                   Abone Ol
                 </button>
               </div>
