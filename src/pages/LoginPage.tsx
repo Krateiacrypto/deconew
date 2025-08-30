@@ -163,14 +163,24 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('superadmin@decarbonize.world');
+                  setPassword('superadmin123');
+                }}
+                className="w-full inline-flex justify-center py-2 px-2 border border-gray-300 rounded-md shadow-sm bg-white text-xs font-medium text-gray-500 hover:bg-gray-50"
+              >
+                Süper Admin
+              </button>
               <button
                 type="button"
                 onClick={() => {
                   setEmail('admin@decarbonize.world');
                   setPassword('admin123');
                 }}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                className="w-full inline-flex justify-center py-2 px-2 border border-gray-300 rounded-md shadow-sm bg-white text-xs font-medium text-gray-500 hover:bg-gray-50"
               >
                 Admin
               </button>
@@ -180,9 +190,49 @@ export const LoginPage: React.FC = () => {
                   setEmail('user@decarbonize.world');
                   setPassword('user123');
                 }}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                className="w-full inline-flex justify-center py-2 px-2 border border-gray-300 rounded-md shadow-sm bg-white text-xs font-medium text-gray-500 hover:bg-gray-50"
               >
                 Kullanıcı
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('advisor@decarbonize.world');
+                  setPassword('advisor123');
+                }}
+                className="w-full inline-flex justify-center py-2 px-2 border border-gray-300 rounded-md shadow-sm bg-white text-xs font-medium text-gray-500 hover:bg-gray-50"
+              >
+                Danışman
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('verification@decarbonize.world');
+                  setPassword('verification123');
+                }}
+                className="w-full inline-flex justify-center py-2 px-2 border border-gray-300 rounded-md shadow-sm bg-white text-xs font-medium text-gray-500 hover:bg-gray-50"
+              >
+                Doğrulama
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('ngo@decarbonize.world');
+                  setPassword('ngo123');
+                }}
+                className="w-full inline-flex justify-center py-2 px-2 border border-gray-300 rounded-md shadow-sm bg-white text-xs font-medium text-gray-500 hover:bg-gray-50"
+              >
+                STK
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('provider@decarbonize.world');
+                  setPassword('provider123');
+                }}
+                className="w-full inline-flex justify-center py-2 px-2 border border-gray-300 rounded-md shadow-sm bg-white text-xs font-medium text-gray-500 hover:bg-gray-50"
+              >
+                Sağlayıcı
               </button>
             </div>
           </div>
