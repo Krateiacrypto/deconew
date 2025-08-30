@@ -1,60 +1,113 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Calendar, User, Tag, ArrowRight } from 'lucide-react';
-import { useDataStore } from '../store/dataStore';
+import { Search, Calendar, User, Tag, ArrowRight, TrendingUp, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useBlogStore } from '../store/blogStore';
+import { BlogPostCard } from '../components/blog/BlogPostCard';
+import { BlogFilters } from '../components/blog/BlogFilters';
+import { BlogPagination } from '../components/blog/BlogPagination';
+import { BlogFilters as BlogFiltersType, PaginationInfo } from '../types/blog';
 
 export const BlogPage: React.FC = () => {
-  const { blogPosts, fetchBlogPosts, isLoading } = useDataStore();
+  const navigate = useNavigate();
+  const { 
+    posts, 
+    categories, 
+    stats,
+    fetchPosts, 
+    fetchCategories, 
+    fetchStats,
+    searchPosts,
+    isLoading 
+  } = useBlogStore();
+  
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [filters, setFilters] = useState<BlogFiltersType>({});
+  const [showFilters, setShowFilters] = useState(false);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 9
+  });
+  const [featuredPosts, setFeaturedPosts] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchBlogPosts();
-  }, [fetchBlogPosts]);
+    loadInitialData();
+  }, []);
 
-  const categories = [
-    { id: 'all', name: 'Tümü' },
-    { id: 'analysis', name: 'Analiz' },
-    { id: 'news', name: 'Haberler' },
-    { id: 'education', name: 'Eğitim' },
-    { id: 'technology', name: 'Teknoloji' },
-  ];
+  useEffect(() => {
+    loadPosts();
+  }, [filters, pagination.currentPage]);
 
-  const featuredPosts = [
-    {
-      id: 'featured-1',
-      title: 'Karbon Kredisi Piyasasının Geleceği',
-      excerpt: 'Blockchain teknolojisinin karbon kredisi piyasasına getirdiği yenilikler ve gelecek projeksiyonları',
-      author: 'Dr. Sarah Johnson',
-      publishedAt: '2024-01-20',
-      category: 'Analysis',
-      image: 'https://images.pexels.com/photos/9324302/pexels-photo-9324302.jpeg',
-      readTime: '8 dakika'
-    },
-    {
-      id: 'featured-2',
-      title: 'Sürdürülebilir Yatırımların Yükselişi',
-      excerpt: 'ESG kriterlerinin yatırım kararlarındaki artan önemi ve karbon nötrleme projelerinin rolü',
-      author: 'Prof. Ahmed Hassan',
-      publishedAt: '2024-01-18',
-      category: 'Education',
-      image: 'https://images.pexels.com/photos/9324301/pexels-photo-9324301.jpeg',
-      readTime: '6 dakika'
+  useEffect(() => {
+    if (searchTerm) {
+      handleSearch();
     }
-  ];
+  }, [searchTerm]);
 
-  const filteredPosts = blogPosts?.filter(post => {
-    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || post.category.toLowerCase() === selectedCategory;
-    return matchesSearch && matchesCategory;
-  }) || [];
+  const loadInitialData = async () => {
+    await Promise.all([
+      fetchCategories(),
+      fetchStats()
+    ]);
+    
+    // Load featured posts (first 2 published posts)
+    const { posts: allPosts } = await fetchPosts({ status: 'published' }, 1, 2);
+    setFeaturedPosts(allPosts);
+    
+    loadPosts();
+  };
+
+  const loadPosts = async () => {
+    const { posts: fetchedPosts, pagination: paginationInfo } = await fetchPosts(
+      filters, 
+      pagination.currentPage, 
+      pagination.itemsPerPage
+    );
+    setPagination(paginationInfo);
+  };
+
+  const handleSearch = async () => {
+    if (searchTerm.trim()) {
+      const searchResults = await searchPosts(searchTerm);
+      // Update pagination for search results
+      setPagination({
+        currentPage: 1,
+        totalPages: Math.ceil(searchResults.length / pagination.itemsPerPage),
+        totalItems: searchResults.length,
+        itemsPerPage: pagination.itemsPerPage
+      });
+    } else {
+      loadPosts();
+    }
+  };
+
+  const handleFiltersChange = (newFilters: BlogFiltersType) => {
+    setFilters(newFilters);
+    setPagination({ ...pagination, currentPage: 1 });
+  };
+
+  const handleClearFilters = () => {
+    setFilters({});
+    setSearchTerm('');
+    setPagination({ ...pagination, currentPage: 1 });
+  };
+
+  const handlePageChange = (page: number) => {
+    setPagination({ ...pagination, currentPage: page });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleReadMore = (slug: string) => {
+    navigate(`/blog/${slug}`);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-12">
+        <div className="mb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -68,10 +121,221 @@ export const BlogPage: React.FC = () => {
               Karbon kredisi, sürdürülebilirlik ve blockchain teknolojileri hakkında 
               uzman görüşleri ve güncel gelişmeler
             </p>
+            
+            {/* Blog Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 max-w-2xl mx-auto">
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <div className="text-2xl font-bold text-emerald-600">{stats.totalPosts}</div>
+                <div className="text-sm text-gray-600">Toplam Yazı</div>
+              </div>
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <div className="text-2xl font-bold text-blue-600">{stats.totalViews.toLocaleString()}</div>
+                <div className="text-sm text-gray-600">Görüntülenme</div>
+              </div>
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <div className="text-2xl font-bold text-purple-600">{stats.totalLikes}</div>
+                <div className="text-sm text-gray-600">Beğeni</div>
+              </div>
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <div className="text-2xl font-bold text-orange-600">{stats.totalComments}</div>
+                <div className="text-sm text-gray-600">Yorum</div>
+              </div>
+            </div>
           </motion.div>
         </div>
 
-        {/* Search and Filters */}
+        {/* Featured Posts */}
+        {featuredPosts.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="mb-12"
+          >
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">Öne Çıkan Yazılar</h2>
+            <div className="grid lg:grid-cols-2 gap-8">
+              {featuredPosts.map((post) => (
+                <BlogPostCard
+                  key={post.id}
+                  post={post}
+                  onReadMore={handleReadMore}
+                  variant="featured"
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        <div className="grid lg:grid-cols-4 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-3">
+            {/* Search Bar */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="bg-white rounded-2xl p-6 shadow-lg mb-8"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Blog yazılarında ara..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  />
+                </div>
+
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`flex items-center space-x-2 px-4 py-3 rounded-lg font-medium transition-colors ${
+                    showFilters ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <Filter className="w-4 h-4" />
+                  <span>Filtreler</span>
+                </button>
+              </div>
+            </motion.div>
+
+            {/* Blog Posts Grid */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
+              {isLoading ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {[...Array(6)].map((_, index) => (
+                    <div key={index} className="bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse">
+                      <div className="h-48 bg-gray-300"></div>
+                      <div className="p-6">
+                        <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                        <div className="h-6 bg-gray-300 rounded mb-3"></div>
+                        <div className="h-4 bg-gray-300 rounded mb-4"></div>
+                        <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : posts.length > 0 ? (
+                <>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {posts.map((post) => (
+                      <BlogPostCard
+                        key={post.id}
+                        post={post}
+                        onReadMore={handleReadMore}
+                      />
+                    ))}
+                  </div>
+                  
+                  {/* Pagination */}
+                  {pagination.totalPages > 1 && (
+                    <div className="mt-12">
+                      <BlogPagination
+                        pagination={pagination}
+                        onPageChange={handlePageChange}
+                      />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-12">
+                  <Tag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-medium text-gray-900 mb-2">Blog yazısı bulunamadı</h3>
+                  <p className="text-gray-600">Arama kriterlerinize uygun blog yazısı bulunamadı.</p>
+                </div>
+              )}
+            </motion.div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Filters */}
+            {showFilters && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <BlogFilters
+                  categories={categories}
+                  filters={filters}
+                  searchTerm={searchTerm}
+                  onFiltersChange={handleFiltersChange}
+                  onSearchChange={setSearchTerm}
+                  onClearFilters={handleClearFilters}
+                />
+              </motion.div>
+            )}
+
+            {/* Categories */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="bg-white rounded-2xl p-6 shadow-lg"
+            >
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Kategoriler</h3>
+              <div className="space-y-2">
+                <button
+                  onClick={() => handleFiltersChange({ ...filters, category: undefined })}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                    !filters.category ? 'bg-emerald-100 text-emerald-700' : 'hover:bg-gray-100'
+                  }`}
+                >
+                  Tümü ({stats.publishedPosts})
+                </button>
+                
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => handleFiltersChange({ 
+                      ...filters, 
+                      category: filters.category === category.name ? undefined : category.name 
+                    })}
+                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center justify-between ${
+                      filters.category === category.name ? 'bg-emerald-100 text-emerald-700' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    <span>{category.name}</span>
+                    <span className="text-sm text-gray-500">({category.postCount})</span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Newsletter Signup */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="bg-gradient-to-br from-emerald-600 to-blue-700 rounded-2xl p-6 text-white"
+            >
+              <h3 className="text-xl font-bold mb-3">Blog Güncellemeleri</h3>
+              <p className="text-emerald-100 mb-4">
+                Yeni blog yazılarımızdan haberdar olmak için e-posta listemize katılın.
+              </p>
+              <div className="space-y-3">
+                <input
+                  type="email"
+                  placeholder="E-posta adresiniz"
+                  className="w-full px-3 py-2 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-white"
+                />
+                <button className="w-full bg-white text-emerald-600 py-2 px-4 rounded-lg font-medium hover:bg-emerald-50 transition-colors">
+                  Abone Ol
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
