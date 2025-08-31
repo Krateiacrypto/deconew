@@ -21,9 +21,10 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { MaintenanceToggle } from '../../components/maintenance/MaintenanceToggle';
+import { MaintenanceContentEditor } from '../../components/maintenance/MaintenanceContentEditor';
 import toast from 'react-hot-toast';
 
-import { motion } from 'framer-motion';
 export const SystemSettings: React.FC = () => {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('general');
@@ -140,6 +141,7 @@ export const SystemSettings: React.FC = () => {
 
   const tabs = [
     { id: 'general', name: 'Genel', icon: Settings },
+    { id: 'maintenance', name: 'Bakım Modu', icon: AlertTriangle },
     { id: 'security', name: 'Güvenlik', icon: Shield },
     { id: 'blockchain', name: 'Blockchain', icon: Server },
     { id: 'trading', name: 'Trading', icon: Globe },
@@ -258,25 +260,6 @@ export const SystemSettings: React.FC = () => {
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
-          <div>
-            <h4 className="font-medium text-red-900">Bakım Modu</h4>
-            <p className="text-sm text-red-700">Platform bakım modunda olduğunda kullanıcılar erişemez</p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.general.maintenanceMode}
-              onChange={(e) => setSettings({
-                ...settings,
-                general: { ...settings.general, maintenanceMode: e.target.checked }
-              })}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
-          </label>
-        </div>
-
         <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg border border-emerald-200">
           <div>
             <h4 className="font-medium text-emerald-900">Kayıt Açık</h4>
@@ -307,13 +290,29 @@ export const SystemSettings: React.FC = () => {
               checked={settings.general.kycRequired}
               onChange={(e) => setSettings({
                 ...settings,
-                general: { ...settings.general, kycRequired: e.target.value }
+                general: { ...settings.general, kycRequired: e.target.checked }
               })}
               className="sr-only peer"
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
           </label>
         </div>
+      </div>
+    </div>
+  );
+
+  const renderMaintenanceSettings = () => (
+    <div className="space-y-8">
+      {/* Maintenance Toggle */}
+      <div>
+        <h4 className="text-lg font-bold text-gray-900 mb-4">Bakım Modu Kontrolü</h4>
+        <MaintenanceToggle />
+      </div>
+
+      {/* Maintenance Content Editor */}
+      <div>
+        <h4 className="text-lg font-bold text-gray-900 mb-4">Bakım Sayfası İçerik Editörü</h4>
+        <MaintenanceContentEditor />
       </div>
     </div>
   );
@@ -949,18 +948,20 @@ export const SystemSettings: React.FC = () => {
                 <h3 className="text-2xl font-bold text-gray-900">
                   {tabs.find(tab => tab.id === activeTab)?.name} Ayarları
                 </h3>
-                <button
-                  onClick={() => handleSaveSettings(activeTab)}
-                  disabled={isLoading}
-                  className="flex items-center space-x-2 bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  <span>{isLoading ? 'Kaydediliyor...' : 'Kaydet'}</span>
-                </button>
+                {activeTab !== 'maintenance' && (
+                  <button
+                    onClick={() => handleSaveSettings(activeTab)}
+                    disabled={isLoading}
+                    className="flex items-center space-x-2 bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    {isLoading ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    <span>{isLoading ? 'Kaydediliyor...' : 'Kaydet'}</span>
+                  </button>
+                )}
               </div>
 
               <motion.div
@@ -970,6 +971,7 @@ export const SystemSettings: React.FC = () => {
                 transition={{ duration: 0.3 }}
               >
                 {activeTab === 'general' && renderGeneralSettings()}
+                {activeTab === 'maintenance' && renderMaintenanceSettings()}
                 {activeTab === 'security' && renderSecuritySettings()}
                 {activeTab === 'blockchain' && renderBlockchainSettings()}
                 {activeTab === 'staking' && renderStakingSettings()}
