@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Save, X, Eye, Upload, Calendar, Globe, Type, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
 import { ContentItem } from '../../../types/content';
 import { ContentEditor } from './ContentEditor';
+import { AlertTriangle } from 'lucide-react';
 
 interface ContentFormProps {
   item?: ContentItem;
