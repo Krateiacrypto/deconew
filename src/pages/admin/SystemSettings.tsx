@@ -23,6 +23,7 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 
+import { motion } from 'framer-motion';
 export const SystemSettings: React.FC = () => {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('general');
