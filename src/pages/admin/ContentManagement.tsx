@@ -331,21 +331,23 @@ export const ContentManagement: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="mb-8"
+          className="mb-6 sm:mb-8"
         >
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">İçerik & Tasarım Yönetimi</h1>
-              <p className="text-gray-600">Website içeriklerini profesyonel şekilde yönetin</p>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">İçerik & Tasarım Yönetimi</h1>
+              <p className="text-sm sm:text-base text-gray-600">Website içeriklerini profesyonel şekilde yönetin</p>
             </div>
-            <div className="flex items-center space-x-3">
-              <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <Download className="w-4 h-4" />
-                <span>Backup Al</span>
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <button className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                <Download className="w-4 h-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Backup Al</span>
+                <span className="sm:hidden">Backup</span>
               </button>
-              <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                <Upload className="w-4 h-4" />
-                <span>İçe Aktar</span>
+              <button className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+                <Upload className="w-4 h-4 flex-shrink-0" />
+                <span className="hidden sm:inline">İçe Aktar</span>
+                <span className="sm:hidden">İçe Aktar</span>
               </button>
             </div>
           </div>
@@ -354,24 +356,27 @@ export const ContentManagement: React.FC = () => {
         {/* Navigation Tabs */}
         <div className="bg-white rounded-2xl shadow-lg mb-8 overflow-hidden">
           <div className="border-b border-gray-200">
-            <nav className="flex overflow-x-auto">
+            <nav className="flex overflow-x-auto scrollbar-hide">
               {sections.map((section) => (
                 <button
                   key={section.id}
                   onClick={() => setActiveSection(section.id)}
-                  className={`flex items-center space-x-3 py-6 px-8 border-b-2 font-medium text-sm transition-colors whitespace-nowrap min-w-0 ${
+                  className={`flex items-center space-x-2 sm:space-x-3 py-4 sm:py-6 px-3 sm:px-6 lg:px-8 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap min-w-0 flex-shrink-0 ${
                     activeSection === section.id
                       ? 'border-emerald-500 text-emerald-600 bg-emerald-50'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  <section.icon className="w-5 h-5 flex-shrink-0" />
-                  <div className="text-left">
+                  <section.icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                  <div className="text-left hidden sm:block">
                     <div className="font-medium">{section.label}</div>
-                    <div className="text-xs text-gray-500">{section.description}</div>
+                    <div className="text-xs text-gray-500 hidden lg:block">{section.description}</div>
+                  </div>
+                  <div className="text-left sm:hidden">
+                    <div className="font-medium text-xs">{section.label.split(' ')[0]}</div>
                   </div>
                   {section.count > 0 && (
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+                    <span className={`px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full text-xs font-medium flex-shrink-0 min-w-[1.5rem] text-center ${
                       activeSection === section.id ? 'bg-emerald-200 text-emerald-800' : 'bg-gray-200 text-gray-600'
                     }`}>
                       {section.count}
