@@ -666,11 +666,19 @@ export const SystemSettings: React.FC = () => {
           <Database className="w-5 h-5 text-blue-600" />
           <h4 className="font-medium text-blue-900">Supabase Konfigürasyonu</h4>
         </div>
-        <p className="text-sm text-blue-700">Veritabanı ve backend servis ayarları</p>
+        <p className="text-sm text-blue-700">
+          Veritabanı, authentication, storage ve real-time servis ayarları. 
+          Bu ayarlar platform'un tüm backend işlevlerini kontrol eder.
+        </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Project URL</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Project URL
+          <span className="text-xs text-gray-500 ml-2">
+            (Supabase Dashboard > Settings > API > Project URL)
+          </span>
+        </label>
         <input
           type="url"
           value={settings.supabase.projectUrl}
@@ -679,11 +687,20 @@ export const SystemSettings: React.FC = () => {
             supabase: { ...settings.supabase, projectUrl: e.target.value }
           })}
           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+          placeholder="https://your-project-ref.supabase.co"
         />
+        <p className="text-xs text-gray-500 mt-1">
+          Supabase projenizin ana URL'si. Tüm API çağrıları bu URL üzerinden yapılır.
+        </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Anon Key</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Anon Key (Public)
+          <span className="text-xs text-gray-500 ml-2">
+            (Dashboard > Settings > API > anon public)
+          </span>
+        </label>
         <div className="relative">
           <input
             type={showSecrets.anonKey ? 'text' : 'password'}
@@ -693,6 +710,7 @@ export const SystemSettings: React.FC = () => {
               supabase: { ...settings.supabase, anonKey: e.target.value }
             })}
             className="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
+            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
           />
           <button
             type="button"
@@ -702,10 +720,19 @@ export const SystemSettings: React.FC = () => {
             {showSecrets.anonKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
+        <p className="text-xs text-gray-500 mt-1">
+          Frontend'de güvenle kullanılabilen public API anahtarı. RLS politikaları ile korunur.
+          Bu anahtar browser'da görünür olduğu için hassas işlemler için kullanılmamalıdır.
+        </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Service Role Key</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Service Role Key (Private)
+          <span className="text-xs text-red-500 ml-2">
+            (GİZLİ - Sadece server-side)
+          </span>
+        </label>
         <div className="relative">
           <input
             type={showSecrets.serviceRoleKey ? 'text' : 'password'}
@@ -724,10 +751,22 @@ export const SystemSettings: React.FC = () => {
             {showSecrets.serviceRoleKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
+        <div className="mt-1 p-2 bg-red-50 rounded border border-red-200">
+          <p className="text-xs text-red-700">
+            <strong>UYARI:</strong> Bu anahtar tüm veritabanı yetkilerine sahiptir. 
+            Sadece server-side işlemler için kullanın. Frontend'de asla kullanmayın!
+            Admin paneli, bulk operations ve migrations için gereklidir.
+          </p>
+        </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Database URL</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Database URL (Direct Connection)
+          <span className="text-xs text-gray-500 ml-2">
+            (Dashboard > Settings > Database > Connection string)
+          </span>
+        </label>
         <div className="relative">
           <input
             type={showSecrets.databaseUrl ? 'text' : 'password'}
@@ -737,6 +776,7 @@ export const SystemSettings: React.FC = () => {
               supabase: { ...settings.supabase, databaseUrl: e.target.value }
             })}
             className="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
+            placeholder="postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres"
           />
           <button
             type="button"
@@ -746,10 +786,20 @@ export const SystemSettings: React.FC = () => {
             {showSecrets.databaseUrl ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
+        <p className="text-xs text-gray-500 mt-1">
+          PostgreSQL veritabanına direkt bağlantı. Database migrations, 
+          bulk data operations ve admin scripts için kullanılır. 
+          Production'da connection pooling kullanın.
+        </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">JWT Secret</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          JWT Secret
+          <span className="text-xs text-gray-500 ml-2">
+            (Dashboard > Settings > API > JWT Settings)
+          </span>
+        </label>
         <div className="relative">
           <input
             type={showSecrets.jwtSecret ? 'text' : 'password'}
@@ -768,6 +818,70 @@ export const SystemSettings: React.FC = () => {
             {showSecrets.jwtSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
+        <p className="text-xs text-gray-500 mt-1">
+          JWT token'larını imzalamak için kullanılan secret key. 
+          Auth token'larının güvenliğini sağlar. Değiştirirseniz tüm kullanıcılar logout olur.
+        </p>
+      </div>
+
+      {/* Connection Test */}
+      <div className="p-4 bg-gray-50 rounded-lg">
+        <h4 className="font-medium text-gray-900 mb-3">Bağlantı Testi</h4>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={async () => {
+              try {
+                const { data, error } = await supabase.from('users').select('count').single();
+                if (error) throw error;
+                toast.success('Supabase bağlantısı başarılı!');
+              } catch (error) {
+                toast.error('Supabase bağlantı hatası!');
+              }
+            }}
+            className="px-3 py-2 bg-emerald-600 text-white rounded text-sm hover:bg-emerald-700"
+          >
+            Database Test
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                const { data } = await supabase.auth.getSession();
+                toast.success('Auth servisi çalışıyor!');
+              } catch (error) {
+                toast.error('Auth servis hatası!');
+              }
+            }}
+            className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+          >
+            Auth Test
+          </button>
+        </div>
+      </div>
+
+      {/* Usage Statistics */}
+      <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+        <h4 className="font-medium text-emerald-900 mb-3">Kullanım İstatistikleri</h4>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="text-emerald-700">Database Boyutu:</span>
+            <p className="font-medium text-emerald-900">~50MB / 500MB</p>
+          </div>
+          <div>
+            <span className="text-emerald-700">API Requests:</span>
+            <p className="font-medium text-emerald-900">~1.2K / 50K</p>
+          </div>
+          <div>
+            <span className="text-emerald-700">Storage:</span>
+            <p className="font-medium text-emerald-900">~25MB / 1GB</p>
+          </div>
+          <div>
+            <span className="text-emerald-700">Bandwidth:</span>
+            <p className="font-medium text-emerald-900">~150MB / 5GB</p>
+          </div>
+        </div>
+        <p className="text-xs text-emerald-700 mt-2">
+          Free tier limitleri. Pro plan'a geçiş için Dashboard > Settings > Billing
+        </p>
       </div>
     </div>
   );
@@ -777,7 +891,10 @@ export const SystemSettings: React.FC = () => {
       <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg border border-emerald-200">
         <div>
           <h4 className="font-medium text-emerald-900">Stripe Entegrasyonu</h4>
-          <p className="text-sm text-emerald-700">Ödeme işlemleri için Stripe entegrasyonu</p>
+          <p className="text-sm text-emerald-700">
+            ICO token satışları ve premium özellikler için ödeme işlemleri. 
+            Supabase Edge Functions ile güvenli webhook handling.
+          </p>
         </div>
         <label className="relative inline-flex items-center cursor-pointer">
           <input
@@ -794,7 +911,12 @@ export const SystemSettings: React.FC = () => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Publishable Key</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Publishable Key (Public)
+          <span className="text-xs text-gray-500 ml-2">
+            (Stripe Dashboard > Developers > API keys > Publishable key)
+          </span>
+        </label>
         <input
           type="text"
           value={settings.stripe.publishableKey}
@@ -803,11 +925,20 @@ export const SystemSettings: React.FC = () => {
             stripe: { ...settings.stripe, publishableKey: e.target.value }
           })}
           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
+          placeholder="pk_test_... veya pk_live_..."
         />
+        <p className="text-xs text-gray-500 mt-1">
+          Frontend'de güvenle kullanılabilen public key. Stripe Elements ve checkout için gerekli.
+        </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Secret Key</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Secret Key (Private)
+          <span className="text-xs text-red-500 ml-2">
+            (GİZLİ - Sadece server-side)
+          </span>
+        </label>
         <div className="relative">
           <input
             type={showSecrets.stripeSecret ? 'text' : 'password'}
@@ -817,6 +948,7 @@ export const SystemSettings: React.FC = () => {
               stripe: { ...settings.stripe, secretKey: e.target.value }
             })}
             className="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
+            placeholder="sk_test_... veya sk_live_..."
           />
           <button
             type="button"
@@ -826,10 +958,21 @@ export const SystemSettings: React.FC = () => {
             {showSecrets.stripeSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
+        <div className="mt-1 p-2 bg-red-50 rounded border border-red-200">
+          <p className="text-xs text-red-700">
+            <strong>UYARI:</strong> Bu anahtar ödeme işlemlerini gerçekleştirebilir. 
+            Sadece Supabase Edge Functions'da kullanın. Frontend'de asla kullanmayın!
+          </p>
+        </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Webhook Secret</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Webhook Secret
+          <span className="text-xs text-gray-500 ml-2">
+            (Stripe Dashboard > Developers > Webhooks > Endpoint secret)
+          </span>
+        </label>
         <div className="relative">
           <input
             type={showSecrets.webhookSecret ? 'text' : 'password'}
@@ -839,6 +982,7 @@ export const SystemSettings: React.FC = () => {
               stripe: { ...settings.stripe, webhookSecret: e.target.value }
             })}
             className="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
+            placeholder="whsec_..."
           />
           <button
             type="button"
@@ -848,6 +992,11 @@ export const SystemSettings: React.FC = () => {
             {showSecrets.webhookSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
+        <p className="text-xs text-gray-500 mt-1">
+          Stripe webhook'larını doğrulamak için kullanılır. 
+          Ödeme durumu güncellemeleri ve güvenlik için kritiktir.
+          Webhook endpoint: https://your-domain.com/api/stripe/webhook
+        </p>
       </div>
 
       <div>
@@ -864,6 +1013,10 @@ export const SystemSettings: React.FC = () => {
           <option value="EUR">EUR</option>
           <option value="TRY">TRY</option>
         </select>
+        <p className="text-xs text-gray-500 mt-1">
+          ICO token satışları için kullanılacak ana para birimi. 
+          Değiştirmek mevcut fiyatlandırmayı etkileyebilir.
+        </p>
       </div>
 
       <div>
@@ -893,6 +1046,23 @@ export const SystemSettings: React.FC = () => {
             </div>
           ))}
         </div>
+        <p className="text-xs text-gray-500 mt-2">
+          ICO katılımcıları için mevcut ödeme seçenekleri. 
+          Kripto para ödemeleri için ek entegrasyon gerekebilir.
+        </p>
+      </div>
+
+      {/* Stripe Test Mode Info */}
+      <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+        <h4 className="font-medium text-yellow-900 mb-2">Test Mode Bilgileri</h4>
+        <div className="text-sm text-yellow-800 space-y-1">
+          <p><strong>Test Kart Numaraları:</strong></p>
+          <p>• Visa: 4242 4242 4242 4242</p>
+          <p>• Mastercard: 5555 5555 5555 4444</p>
+          <p>• Amex: 3782 822463 10005</p>
+          <p>• CVV: Herhangi 3-4 haneli sayı</p>
+          <p>• Tarih: Gelecekteki herhangi bir tarih</p>
+        </div>
       </div>
     </div>
   );
@@ -913,7 +1083,19 @@ export const SystemSettings: React.FC = () => {
             </div>
             <div>
               <h1 className="text-4xl font-bold text-gray-900">Sistem Ayarları</h1>
-              <p className="text-gray-600">Platform konfigürasyonu ve backend ayarları</p>
+              <p className="text-gray-600 mb-4">Bu bölüm yakında eklenecek.</p>
+              {activeTab === 'api' && (
+                <div className="text-left max-w-md mx-auto">
+                  <h4 className="font-medium text-gray-900 mb-2">API Endpoint'leri:</h4>
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <p>• <code>/api/auth/*</code> - Authentication</p>
+                    <p>• <code>/api/projects/*</code> - Proje yönetimi</p>
+                    <p>• <code>/api/blog/*</code> - Blog işlemleri</p>
+                    <p>• <code>/api/users/*</code> - Kullanıcı yönetimi</p>
+                    <p>• <code>/api/stripe/*</code> - Ödeme webhook'ları</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
