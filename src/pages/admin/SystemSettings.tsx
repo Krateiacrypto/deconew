@@ -961,7 +961,7 @@ export const SystemSettings: React.FC = () => {
         <div className="mt-1 p-2 bg-red-50 rounded border border-red-200">
           <p className="text-xs text-red-700">
             <strong>UYARI:</strong> Bu anahtar ödeme işlemlerini gerçekleştirebilir. 
-            Sadece Supabase Edge Functions'da kullanın. Frontend'de asla kullanmayın!
+            Sadece Supabase Edge Functions'da kullanın. Frontend\'de asla kullanmayın!
           </p>
         </div>
       </div>
