@@ -1,40 +1,41 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { hasPermission, hasAnyPermission } from '../../utils/permissions';
+import { hasPermission, hasAnyPermission, canAccessData } from '../../utils/permissions';
 
-interface ProtectedRouteProps {
+interface RoleBasedAccessProps {
   children: React.ReactNode;
   requiredPermission?: string;
   requiredPermissions?: string[];
   requireAll?: boolean;
   allowedRoles?: string[];
-  fallbackPath?: string;
+  dataOwnerId?: string;
+  fallback?: React.ReactNode;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+export const RoleBasedAccess: React.FC<RoleBasedAccessProps> = ({
   children,
   requiredPermission,
   requiredPermissions = [],
   requireAll = false,
   allowedRoles = [],
-  fallbackPath = '/login'
+  dataOwnerId,
+  fallback = null
 }) => {
-  const { isAuthenticated, user } = useAuthStore();
+  const { user } = useAuthStore();
 
-  // Kullanıcı giriş yapmamışsa login sayfasına yönlendir
-  if (!isAuthenticated || !user) {
-    return <Navigate to={fallbackPath} replace />;
+  // Kullanıcı giriş yapmamışsa fallback göster
+  if (!user) {
+    return <>{fallback}</>;
   }
 
   // Rol kontrolü
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/dashboard" replace />;
+    return <>{fallback}</>;
   }
 
   // Tek izin kontrolü
   if (requiredPermission && !hasPermission(user, requiredPermission)) {
-    return <Navigate to="/dashboard" replace />;
+    return <>{fallback}</>;
   }
 
   // Çoklu izin kontrolü
@@ -44,8 +45,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       : hasAnyPermission(user, requiredPermissions);
     
     if (!hasAccess) {
-      return <Navigate to="/dashboard" replace />;
+      return <>{fallback}</>;
     }
+  }
+
+  // Veri erişim kontrolü
+  if (dataOwnerId && !canAccessData(user, dataOwnerId)) {
+    return <>{fallback}</>;
   }
 
   return <>{children}</>;

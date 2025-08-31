@@ -13,7 +13,6 @@ import { ICOPage } from './pages/ICOPage';
 import { AboutPage } from './pages/AboutPage';
 import { WhitepaperPage } from './pages/WhitepaperPage';
 import { BlogPage } from './pages/BlogPage';
-import { BlogDetailPage } from './pages/BlogDetailPage';
 import { PortfolioPage } from './pages/PortfolioPage';
 import { AdvisorPage } from './pages/AdvisorPage';
 import { WalletPage } from './pages/WalletPage';
@@ -94,7 +93,6 @@ function App() {
             <Route path="/trading" element={<TradingPage />} />
             <Route path="/ico" element={<ICOPage />} />
             <Route path="/blog" element={<BlogPage />} />
-            <Route path="/blog/:slug" element={<BlogDetailPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/whitepaper" element={<WhitepaperPage />} />
             
