@@ -1,14 +1,28 @@
 import { User, Permission, RolePermissions } from '../types';
 
-// Tüm izinlerin tanımları
+// Define all available permissions
 export const PERMISSIONS: Permission[] = [
-  // Kullanıcı Yönetimi
+  // User Management
   {
     id: 'users.view',
     name: 'Kullanıcıları Görüntüle',
-    description: 'Kullanıcı listesini görüntüleme',
+    description: 'Kullanıcı listesini ve profillerini görüntüleme',
     category: 'user_management',
     actions: ['read']
+  },
+  {
+    id: 'users.edit',
+    name: 'Kullanıcıları Düzenle',
+    description: 'Kullanıcı bilgilerini düzenleme ve güncelleme',
+    category: 'user_management',
+    actions: ['update']
+  },
+  {
+    id: 'users.delete',
+    name: 'Kullanıcıları Sil',
+    description: 'Kullanıcı hesaplarını silme',
+    category: 'user_management',
+    actions: ['delete']
   },
   {
     id: 'users.create',
@@ -17,33 +31,12 @@ export const PERMISSIONS: Permission[] = [
     category: 'user_management',
     actions: ['create']
   },
-  {
-    id: 'users.edit',
-    name: 'Kullanıcı Düzenle',
-    description: 'Kullanıcı bilgilerini düzenleme',
-    category: 'user_management',
-    actions: ['update']
-  },
-  {
-    id: 'users.delete',
-    name: 'Kullanıcı Sil',
-    description: 'Kullanıcı hesabını silme',
-    category: 'user_management',
-    actions: ['delete']
-  },
-  {
-    id: 'users.manage_roles',
-    name: 'Rol Yönetimi',
-    description: 'Kullanıcı rollerini değiştirme',
-    category: 'user_management',
-    actions: ['update']
-  },
-
-  // Proje Yönetimi
+  
+  // Project Management
   {
     id: 'projects.view',
     name: 'Projeleri Görüntüle',
-    description: 'Proje listesini görüntüleme',
+    description: 'Proje listesini ve detaylarını görüntüleme',
     category: 'project_management',
     actions: ['read']
   },
@@ -56,147 +49,112 @@ export const PERMISSIONS: Permission[] = [
   },
   {
     id: 'projects.edit',
-    name: 'Proje Düzenle',
+    name: 'Projeleri Düzenle',
     description: 'Proje bilgilerini düzenleme',
     category: 'project_management',
     actions: ['update']
   },
   {
     id: 'projects.approve',
-    name: 'Proje Onaylama',
-    description: 'Projeleri onaylama/reddetme',
+    name: 'Projeleri Onayla',
+    description: 'Proje onaylama ve reddetme',
     category: 'project_management',
     actions: ['approve', 'reject']
   },
-  {
-    id: 'projects.verify',
-    name: 'Proje Doğrulama',
-    description: 'Proje doğrulama ve sertifikasyon',
-    category: 'verification',
-    actions: ['verify', 'certify']
-  },
-
-  // İçerik Yönetimi
+  
+  // Content Management
   {
     id: 'content.view',
-    name: 'İçerik Görüntüle',
-    description: 'İçerikleri görüntüleme',
+    name: 'İçerikleri Görüntüle',
+    description: 'Site içeriklerini görüntüleme',
     category: 'content_management',
     actions: ['read']
-  },
-  {
-    id: 'content.create',
-    name: 'İçerik Oluştur',
-    description: 'Yeni içerik oluşturma',
-    category: 'content_management',
-    actions: ['create']
   },
   {
     id: 'content.edit',
-    name: 'İçerik Düzenle',
-    description: 'İçerikleri düzenleme',
+    name: 'İçerikleri Düzenle',
+    description: 'Site içeriklerini düzenleme',
     category: 'content_management',
-    actions: ['update']
+    actions: ['create', 'update', 'delete']
   },
   {
-    id: 'content.publish',
-    name: 'İçerik Yayınla',
-    description: 'İçerikleri yayınlama',
+    id: 'blog.manage',
+    name: 'Blog Yönetimi',
+    description: 'Blog yazıları oluşturma, düzenleme ve yayınlama',
     category: 'content_management',
-    actions: ['publish']
+    actions: ['create', 'update', 'delete', 'publish']
   },
-  {
-    id: 'content.delete',
-    name: 'İçerik Sil',
-    description: 'İçerikleri silme',
-    category: 'content_management',
-    actions: ['delete']
-  },
-
-  // Finansal İşlemler
-  {
-    id: 'finance.view',
-    name: 'Finansal Verileri Görüntüle',
-    description: 'Finansal raporları görüntüleme',
-    category: 'financial',
-    actions: ['read']
-  },
-  {
-    id: 'finance.token_distribution',
-    name: 'Token Dağıtımı',
-    description: 'Token dağıtım onayları',
-    category: 'financial',
-    actions: ['approve', 'distribute']
-  },
-  {
-    id: 'finance.pricing',
-    name: 'Fiyat Belirleme',
-    description: 'Token ve karbon kredisi fiyat belirleme',
-    category: 'financial',
-    actions: ['update']
-  },
-
-  // Sistem Ayarları
+  
+  // System Settings
   {
     id: 'system.settings',
     name: 'Sistem Ayarları',
-    description: 'Sistem konfigürasyonu',
+    description: 'Platform ayarlarını yapılandırma',
     category: 'system_settings',
     actions: ['read', 'update']
   },
   {
-    id: 'system.security',
-    name: 'Güvenlik Ayarları',
-    description: 'Güvenlik konfigürasyonu',
+    id: 'system.backup',
+    name: 'Sistem Yedekleme',
+    description: 'Sistem yedekleme ve geri yükleme',
     category: 'system_settings',
-    actions: ['read', 'update']
+    actions: ['backup', 'restore']
   },
+  
+  // Financial
   {
-    id: 'system.logs',
-    name: 'Sistem Logları',
-    description: 'Sistem loglarını görüntüleme',
-    category: 'system_settings',
+    id: 'financial.view',
+    name: 'Mali Verileri Görüntüle',
+    description: 'Mali raporları ve istatistikleri görüntüleme',
+    category: 'financial',
     actions: ['read']
   },
-
-  // Danışmanlık
   {
-    id: 'advisory.provide',
-    name: 'Danışmanlık Hizmeti',
-    description: 'Kullanıcılara danışmanlık hizmeti verme',
-    category: 'advisory',
-    actions: ['advise', 'communicate']
+    id: 'financial.manage',
+    name: 'Mali İşlemler',
+    description: 'Mali işlemleri yönetme',
+    category: 'financial',
+    actions: ['create', 'update', 'approve']
   },
+  
+  // Verification
   {
-    id: 'advisory.reports',
-    name: 'Danışmanlık Raporları',
-    description: 'Danışmanlık raporları oluşturma',
-    category: 'advisory',
-    actions: ['create', 'read']
+    id: 'verification.kyc',
+    name: 'KYC Doğrulama',
+    description: 'KYC başvurularını inceleme ve onaylama',
+    category: 'verification',
+    actions: ['review', 'approve', 'reject']
   },
-
-  // Doğrulama
   {
     id: 'verification.projects',
     name: 'Proje Doğrulama',
-    description: 'Projeleri teknik olarak doğrulama',
+    description: 'Karbon kredisi projelerini doğrulama',
     category: 'verification',
-    actions: ['verify', 'certify', 'report']
+    actions: ['verify', 'audit']
+  },
+  
+  // Advisory
+  {
+    id: 'advisory.assign',
+    name: 'Danışman Atama',
+    description: 'Kullanıcılara danışman atama',
+    category: 'advisory',
+    actions: ['assign', 'reassign']
   },
   {
-    id: 'verification.carbon_credits',
-    name: 'Karbon Kredisi Doğrulama',
-    description: 'Karbon kredilerini hesaplama ve doğrulama',
-    category: 'verification',
-    actions: ['calculate', 'verify', 'certify']
+    id: 'advisory.manage',
+    name: 'Danışmanlık Yönetimi',
+    description: 'Danışmanlık süreçlerini yönetme',
+    category: 'advisory',
+    actions: ['create', 'update', 'schedule']
   }
 ];
 
-// Rol bazlı izin tanımları
+// Define role permissions
 export const ROLE_PERMISSIONS: RolePermissions[] = [
   {
     role: 'superadmin',
-    permissions: PERMISSIONS.map(p => p.id), // Tüm izinler
+    permissions: PERMISSIONS.map(p => p.id), // All permissions
     restrictions: {
       dataAccess: 'all'
     }
@@ -204,15 +162,15 @@ export const ROLE_PERMISSIONS: RolePermissions[] = [
   {
     role: 'admin',
     permissions: [
-      'users.view', 'users.create', 'users.edit', 'users.delete',
+      'users.view', 'users.edit', 'users.create',
       'projects.view', 'projects.create', 'projects.edit', 'projects.approve',
-      'content.view', 'content.create', 'content.edit', 'content.publish', 'content.delete',
-      'finance.view', 'finance.token_distribution',
-      'advisory.reports'
+      'content.view', 'content.edit', 'blog.manage',
+      'financial.view',
+      'verification.kyc'
     ],
     restrictions: {
       dataAccess: 'all',
-      maxUsers: 10000
+      maxUsers: 1000
     }
   },
   {
@@ -220,9 +178,8 @@ export const ROLE_PERMISSIONS: RolePermissions[] = [
     permissions: [
       'users.view',
       'projects.view',
-      'content.view', 'content.create',
-      'advisory.provide', 'advisory.reports',
-      'finance.view'
+      'content.view',
+      'advisory.manage'
     ],
     restrictions: {
       dataAccess: 'assigned',
@@ -232,20 +189,20 @@ export const ROLE_PERMISSIONS: RolePermissions[] = [
   {
     role: 'verification_org',
     permissions: [
-      'projects.view', 'projects.verify',
-      'verification.projects', 'verification.carbon_credits',
-      'content.view'
+      'projects.view',
+      'verification.projects',
+      'verification.kyc'
     ],
     restrictions: {
-      dataAccess: 'assigned'
+      dataAccess: 'own'
     }
   },
   {
     role: 'ngo',
     permissions: [
-      'projects.view', 'projects.create', 'projects.edit',
-      'content.view', 'content.create',
-      'finance.view'
+      'projects.view',
+      'projects.create',
+      'content.view'
     ],
     restrictions: {
       dataAccess: 'own',
@@ -255,21 +212,21 @@ export const ROLE_PERMISSIONS: RolePermissions[] = [
   {
     role: 'carbon_provider',
     permissions: [
-      'projects.view', 'projects.create', 'projects.edit',
-      'finance.view', 'finance.pricing',
+      'projects.view',
+      'projects.create',
+      'projects.edit',
       'content.view'
     ],
     restrictions: {
       dataAccess: 'own',
-      maxProjects: 25
+      maxProjects: 50
     }
   },
   {
     role: 'user',
     permissions: [
       'projects.view',
-      'content.view',
-      'finance.view'
+      'content.view'
     ],
     restrictions: {
       dataAccess: 'own'
@@ -277,7 +234,7 @@ export const ROLE_PERMISSIONS: RolePermissions[] = [
   }
 ];
 
-// İzin kontrol fonksiyonları
+// Helper functions
 export const hasPermission = (user: User | null, permissionId: string): boolean => {
   if (!user) return false;
   
@@ -285,15 +242,14 @@ export const hasPermission = (user: User | null, permissionId: string): boolean 
   return rolePermissions?.permissions.includes(permissionId) || false;
 };
 
-export const hasAnyPermission = (user: User | null, permissionIds: string[]): boolean => {
-  return permissionIds.some(permissionId => hasPermission(user, permissionId));
+export const getUserPermissions = (user: User | null): string[] => {
+  if (!user) return [];
+  
+  const rolePermissions = ROLE_PERMISSIONS.find(rp => rp.role === user.role);
+  return rolePermissions?.permissions || [];
 };
 
-export const hasAllPermissions = (user: User | null, permissionIds: string[]): boolean => {
-  return permissionIds.every(permissionId => hasPermission(user, permissionId));
-};
-
-export const canAccessData = (user: User | null, dataOwnerId?: string): boolean => {
+export const canAccessResource = (user: User | null, resourceOwnerId: string): boolean => {
   if (!user) return false;
   
   const rolePermissions = ROLE_PERMISSIONS.find(rp => rp.role === user.role);
@@ -303,71 +259,63 @@ export const canAccessData = (user: User | null, dataOwnerId?: string): boolean 
     case 'all':
       return true;
     case 'assigned':
-      return user.assignedUsers?.includes(dataOwnerId || '') || user.id === dataOwnerId;
+      // Check if user is assigned to this resource (implementation depends on context)
+      return user.assignedUsers?.includes(resourceOwnerId) || user.id === resourceOwnerId;
     case 'own':
-      return user.id === dataOwnerId;
+      return user.id === resourceOwnerId;
     default:
       return false;
   }
 };
 
 export const getRoleDisplayName = (role: User['role']): string => {
-  switch (role) {
-    case 'superadmin':
-      return 'Süper Admin';
-    case 'admin':
-      return 'Admin';
-    case 'advisor':
-      return 'Danışman';
-    case 'verification_org':
-      return 'Doğrulama Kuruluşu';
-    case 'ngo':
-      return 'STK';
-    case 'carbon_provider':
-      return 'Karbon Sağlayıcı';
-    case 'user':
-      return 'Kullanıcı';
-    default:
-      return role;
-  }
+  const roleNames: Record<User['role'], string> = {
+    superadmin: 'Süper Admin',
+    admin: 'Admin',
+    advisor: 'Danışman',
+    verification_org: 'Doğrulama Kuruluşu',
+    ngo: 'STK',
+    carbon_provider: 'Karbon Sağlayıcı',
+    user: 'Kullanıcı'
+  };
+  
+  return roleNames[role] || role;
 };
 
 export const getRoleColor = (role: User['role']): string => {
-  switch (role) {
-    case 'superadmin':
-      return 'bg-purple-100 text-purple-800';
-    case 'admin':
-      return 'bg-blue-100 text-blue-800';
-    case 'advisor':
-      return 'bg-emerald-100 text-emerald-800';
-    case 'verification_org':
-      return 'bg-orange-100 text-orange-800';
-    case 'ngo':
-      return 'bg-pink-100 text-pink-800';
-    case 'carbon_provider':
-      return 'bg-green-100 text-green-800';
-    case 'user':
-      return 'bg-gray-100 text-gray-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
+  const roleColors: Record<User['role'], string> = {
+    superadmin: 'bg-purple-100 text-purple-800',
+    admin: 'bg-red-100 text-red-800',
+    advisor: 'bg-blue-100 text-blue-800',
+    verification_org: 'bg-green-100 text-green-800',
+    ngo: 'bg-orange-100 text-orange-800',
+    carbon_provider: 'bg-teal-100 text-teal-800',
+    user: 'bg-gray-100 text-gray-800'
+  };
+  
+  return roleColors[role] || 'bg-gray-100 text-gray-800';
 };
 
-export const getPermissionsByCategory = (user: User | null) => {
-  if (!user) return {};
+export const getPermissionsByCategory = (category: Permission['category']): Permission[] => {
+  return PERMISSIONS.filter(p => p.category === category);
+};
+
+export const hasAnyPermission = (user: User | null, permissionIds: string[]): boolean => {
+  if (!user) return false;
+  return permissionIds.some(permissionId => hasPermission(user, permissionId));
+};
+
+export const canManageUser = (currentUser: User | null, targetUser: User): boolean => {
+  if (!currentUser) return false;
   
-  const rolePermissions = ROLE_PERMISSIONS.find(rp => rp.role === user.role);
-  if (!rolePermissions) return {};
+  // Superadmin can manage everyone
+  if (currentUser.role === 'superadmin') return true;
   
-  const userPermissions = PERMISSIONS.filter(p => 
-    rolePermissions.permissions.includes(p.id)
-  );
+  // Admin can manage everyone except superadmin and other admins
+  if (currentUser.role === 'admin') {
+    return !['superadmin', 'admin'].includes(targetUser.role);
+  }
   
-  return userPermissions.reduce((acc, permission) => {
-    if (!acc[permission.category]) {
-      acc[permission.category] = [];
-    }
-    acc[permission.category].push(permission);
-    return acc;
-  }, {} as Record<string, Permission[]>);
+  // Others can only manage themselves
+  return currentUser.id === targetUser.id;
 };
