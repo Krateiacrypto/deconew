@@ -1,54 +1,85 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, Calendar, User, Tag, ArrowRight } from 'lucide-react';
-import { useDataStore } from '../store/dataStore';
+import { useBlogStore } from '../store/blogStore';
+import { BlogPostCard } from '../components/blog/BlogPostCard';
+import { BlogFilters } from '../components/blog/BlogFilters';
+import { BlogPagination } from '../components/blog/BlogPagination';
+import { BlogFilters as BlogFiltersType, PaginationInfo } from '../types/blog';
 
 export const BlogPage: React.FC = () => {
-  const { blogPosts, fetchBlogPosts, isLoading } = useDataStore();
+  const navigate = useNavigate();
+  const { 
+    posts, 
+    categories, 
+    fetchPosts, 
+    fetchCategories, 
+    isLoading 
+  } = useBlogStore();
+  
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [filters, setFilters] = useState<BlogFiltersType>({});
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 9
+  });
+  const [featuredPosts, setFeaturedPosts] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchBlogPosts();
-  }, [fetchBlogPosts]);
+    loadData();
+  }, []);
 
-  const categories = [
-    { id: 'all', name: 'Tümü' },
-    { id: 'analysis', name: 'Analiz' },
-    { id: 'news', name: 'Haberler' },
-    { id: 'education', name: 'Eğitim' },
-    { id: 'technology', name: 'Teknoloji' },
-  ];
+  useEffect(() => {
+    loadPosts();
+  }, [filters, pagination.currentPage, searchTerm]);
 
-  const featuredPosts = [
-    {
-      id: 'featured-1',
-      title: 'Karbon Kredisi Piyasasının Geleceği',
-      excerpt: 'Blockchain teknolojisinin karbon kredisi piyasasına getirdiği yenilikler ve gelecek projeksiyonları',
-      author: 'Dr. Sarah Johnson',
-      publishedAt: '2024-01-20',
-      category: 'Analysis',
-      image: 'https://images.pexels.com/photos/9324302/pexels-photo-9324302.jpeg',
-      readTime: '8 dakika'
-    },
-    {
-      id: 'featured-2',
-      title: 'Sürdürülebilir Yatırımların Yükselişi',
-      excerpt: 'ESG kriterlerinin yatırım kararlarındaki artan önemi ve karbon nötrleme projelerinin rolü',
-      author: 'Prof. Ahmed Hassan',
-      publishedAt: '2024-01-18',
-      category: 'Education',
-      image: 'https://images.pexels.com/photos/9324301/pexels-photo-9324301.jpeg',
-      readTime: '6 dakika'
+  const loadData = async () => {
+    await fetchCategories();
+    loadPosts();
+  };
+
+  const loadPosts = async () => {
+    const searchFilters = searchTerm ? { ...filters } : filters;
+    const { posts: fetchedPosts, pagination: paginationInfo } = await fetchPosts(
+      searchFilters, 
+      pagination.currentPage, 
+      pagination.itemsPerPage
+    );
+    
+    // Apply search filter on frontend if needed
+    let filteredPosts = fetchedPosts;
+    if (searchTerm) {
+      filteredPosts = fetchedPosts.filter(post => 
+        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.author.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
-  ];
+    
+    setPagination(paginationInfo);
+    
+    // Set featured posts (first 2 published posts)
+    const published = fetchedPosts.filter(p => p.status === 'published');
+    setFeaturedPosts(published.slice(0, 2));
+  };
 
-  const filteredPosts = blogPosts?.filter(post => {
-    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || post.category.toLowerCase() === selectedCategory;
-    return matchesSearch && matchesCategory;
-  }) || [];
+  const handleReadMore = (slug: string) => {
+    navigate(`/blog/${slug}`);
+  };
+
+  const handlePageChange = (page: number) => {
+    setPagination({ ...pagination, currentPage: page });
+  };
+
+  const handleClearFilters = () => {
+    setFilters({});
+    setSearchTerm('');
+    setPagination({ ...pagination, currentPage: 1 });
+  };
+
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -72,97 +103,44 @@ export const BlogPage: React.FC = () => {
         </div>
 
         {/* Search and Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="bg-white rounded-2xl p-6 shadow-lg mb-12"
-        >
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-            {/* Search */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Blog yazılarında ara..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-              />
-            </div>
-
-            {/* Category Filters */}
-            <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    selectedCategory === category.id
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                  }`}
-                >
-                  {category.name}
-                </button>
-              ))}
-            </div>
+        <div className="grid lg:grid-cols-4 gap-8 mb-12">
+          <div className="lg:col-span-1">
+            <BlogFilters
+              categories={categories}
+              filters={filters}
+              searchTerm={searchTerm}
+              onFiltersChange={setFilters}
+              onSearchChange={setSearchTerm}
+              onClearFilters={handleClearFilters}
+            />
           </div>
-        </motion.div>
-
-        {/* Featured Posts */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-12"
-        >
-          <h2 className="text-3xl font-bold text-gray-900 mb-8">Öne Çıkan Yazılar</h2>
-          <div className="grid lg:grid-cols-2 gap-8">
-            {featuredPosts.map((post, index) => (
-              <div key={post.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                <div className="relative h-64 overflow-hidden">
-                  <img
-                    src={post.image}
-                    alt={post.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-4 left-4">
-                    <span className="px-3 py-1 bg-emerald-600 text-white rounded-full text-sm font-medium">
-                      Öne Çıkan
-                    </span>
-                  </div>
+          
+          <div className="lg:col-span-3">
+            {/* Featured Posts */}
+            {featuredPosts.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="mb-12"
+              >
+                <h2 className="text-3xl font-bold text-gray-900 mb-8">Öne Çıkan Yazılar</h2>
+                <div className="grid lg:grid-cols-2 gap-8">
+                  {featuredPosts.map((post) => (
+                    <BlogPostCard
+                      key={post.id}
+                      post={post}
+                      onReadMore={handleReadMore}
+                      variant="featured"
+                    />
+                  ))}
                 </div>
-                <div className="p-6">
-                  <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="w-4 h-4" />
-                      <span>{post.publishedAt}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <User className="w-4 h-4" />
-                      <span>{post.author}</span>
-                    </div>
-                    <span>{post.readTime}</span>
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2">{post.title}</h3>
-                  <p className="text-gray-600 mb-4 line-clamp-3">{post.excerpt}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                      {post.category}
-                    </span>
-                    <button className="flex items-center space-x-1 text-emerald-600 hover:text-emerald-700 font-medium">
-                      <span>Devamını Oku</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+              </motion.div>
+            )}
           </div>
-        </motion.div>
+        </div>
 
-        {/* Blog Posts Grid */}
+        {/* All Blog Posts */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -184,50 +162,38 @@ export const BlogPage: React.FC = () => {
                 </div>
               ))}
             </div>
-          ) : filteredPosts.length > 0 ? (
+          ) : posts.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredPosts.map((post, index) => (
-                <div key={post.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                  <div className="relative h-48 overflow-hidden bg-gradient-to-br from-emerald-400 to-blue-500">
-                    <div className="absolute inset-0 bg-black/20"></div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Tag className="w-12 h-12 text-white opacity-80" />
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="w-4 h-4" />
-                        <span>{post.publishedAt}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <User className="w-4 h-4" />
-                        <span>{post.author}</span>
-                      </div>
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2">{post.title}</h3>
-                    <p className="text-gray-600 mb-4 line-clamp-3">{post.excerpt}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-sm font-medium">
-                        {post.category}
-                      </span>
-                      <button className="flex items-center space-x-1 text-emerald-600 hover:text-emerald-700 font-medium">
-                        <span>Oku</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
+              {posts.map((post) => (
+                <BlogPostCard
+                  key={post.id}
+                  post={post}
+                  onReadMore={handleReadMore}
+                />
               ))}
             </div>
           ) : (
             <div className="text-center py-12">
               <Tag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-medium text-gray-900 mb-2">Yazı bulunamadı</h3>
-              <p className="text-gray-600">Arama kriterlerinize uygun blog yazısı bulunamadı.</p>
+              <p className="text-gray-600">
+                {searchTerm || Object.keys(filters).length > 0 
+                  ? 'Arama kriterlerinize uygun blog yazısı bulunamadı.' 
+                  : 'Henüz blog yazısı eklenmemiş.'}
+              </p>
             </div>
           )}
         </motion.div>
+
+        {/* Pagination */}
+        {pagination.totalPages > 1 && (
+          <div className="mt-12">
+            <BlogPagination
+              pagination={pagination}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        )}
 
         {/* Newsletter Signup */}
         <motion.div
