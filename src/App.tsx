@@ -35,6 +35,8 @@ import { ContentManagement } from './pages/admin/ContentManagement';
 import { VisualEditor } from './pages/admin/VisualEditor';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
+import { MaintenanceProvider } from './components/maintenance/MaintenanceProvider';
+import { useMaintenanceCheck } from './hooks/useMaintenanceCheck';
 
 // Dashboard Router Component
 const DashboardRouter: React.FC = () => {
@@ -59,176 +61,181 @@ const DashboardRouter: React.FC = () => {
 };
 
 function App() {
+  // Initialize maintenance check hook
+  useMaintenanceCheck();
+
   return (
-    <Router>
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50">
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-            success: {
+    <MaintenanceProvider>
+      <Router>
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50">
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
               style: {
-                background: '#10b981',
+                background: '#363636',
+                color: '#fff',
               },
-            },
-            error: {
-              style: {
-                background: '#ef4444',
+              success: {
+                style: {
+                  background: '#10b981',
+                },
               },
-            },
-          }}
-        />
-        
-        <Header />
-        <main className="pt-20">
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/projects" element={<ProjectsPage />} />
-            <Route path="/trading" element={<TradingPage />} />
-            <Route path="/ico" element={<ICOPage />} />
-            <Route path="/blog" element={<BlogPage />} />
-            <Route path="/blog/:slug" element={<BlogDetailPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/whitepaper" element={<WhitepaperPage />} />
-            
-            {/* Protected Routes */}
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <DashboardRouter />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/portfolio" 
-              element={
-                <ProtectedRoute allowedRoles={['user', 'advisor', 'admin', 'superadmin']}>
-                  <PortfolioPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/wallet" 
-              element={
-                <ProtectedRoute>
-                  <WalletPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/advisor" 
-              element={
-                <ProtectedRoute allowedRoles={['user', 'admin', 'superadmin']}>
-                  <AdvisorPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/kyc" 
-              element={
-                <ProtectedRoute>
-                  <KYCPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/staking" 
-              element={
-                <ProtectedRoute allowedRoles={['user', 'advisor', 'admin', 'superadmin']}>
-                  <StakingPage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Admin Routes */}
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/profiles" 
-              element={
-                <ProtectedRoute allowedRoles={['superadmin']}>
-                  <UserProfiles />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/kyc" 
-              element={
-                <ProtectedRoute requiredPermission="users.edit">
-                  <KYCManagement />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/projects" 
-              element={
-                <ProtectedRoute requiredPermission="projects.approve">
-                  <ProjectManagement />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/users" 
-              element={
-                <ProtectedRoute requiredPermission="users.view">
-                  <UserManagement />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/settings" 
-              element={
-                <ProtectedRoute requiredPermission="system.settings">
-                  <SystemSettings />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/content" 
-              element={
-                <ProtectedRoute requiredPermission="content.edit">
-                  <ContentManagement />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/editor" 
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-                  <VisualEditor />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
-    </Router>
+              error: {
+                style: {
+                  background: '#ef4444',
+                },
+              },
+            }}
+          />
+          
+          <Header />
+          <main className="pt-20">
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<HomePage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/trading" element={<TradingPage />} />
+              <Route path="/ico" element={<ICOPage />} />
+              <Route path="/blog" element={<BlogPage />} />
+              <Route path="/blog/:slug" element={<BlogDetailPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/whitepaper" element={<WhitepaperPage />} />
+              
+              {/* Protected Routes */}
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <DashboardRouter />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/portfolio" 
+                element={
+                  <ProtectedRoute allowedRoles={['user', 'advisor', 'admin', 'superadmin']}>
+                    <PortfolioPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/wallet" 
+                element={
+                  <ProtectedRoute>
+                    <WalletPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/advisor" 
+                element={
+                  <ProtectedRoute allowedRoles={['user', 'admin', 'superadmin']}>
+                    <AdvisorPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/kyc" 
+                element={
+                  <ProtectedRoute>
+                    <KYCPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/staking" 
+                element={
+                  <ProtectedRoute allowedRoles={['user', 'advisor', 'admin', 'superadmin']}>
+                    <StakingPage />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Admin Routes */}
+              <Route 
+                path="/admin" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/profiles" 
+                element={
+                  <ProtectedRoute allowedRoles={['superadmin']}>
+                    <UserProfiles />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/kyc" 
+                element={
+                  <ProtectedRoute requiredPermission="users.edit">
+                    <KYCManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/projects" 
+                element={
+                  <ProtectedRoute requiredPermission="projects.approve">
+                    <ProjectManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/users" 
+                element={
+                  <ProtectedRoute requiredPermission="users.view">
+                    <UserManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/settings" 
+                element={
+                  <ProtectedRoute requiredPermission="system.settings">
+                    <SystemSettings />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/content" 
+                element={
+                  <ProtectedRoute requiredPermission="content.edit">
+                    <ContentManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/editor" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                    <VisualEditor />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
+      </Router>
+    </MaintenanceProvider>
   );
 }
 
