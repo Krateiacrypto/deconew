@@ -38,9 +38,11 @@ import { ContentForm } from '../../components/admin/content/ContentForm';
 import { RoadmapManager } from '../../components/admin/content/RoadmapManager';
 import { TeamManager } from '../../components/admin/content/TeamManager';
 import { BannerManager } from '../../components/admin/content/BannerManager';
+import { BlogManagement } from './BlogManagement';
 import toast from 'react-hot-toast';
 
 type ContentSection = 'content' | 'roadmap' | 'team' | 'banners' | 'audit' | 'analytics';
+type ContentSection = 'content' | 'roadmap' | 'team' | 'banners' | 'blog' | 'audit' | 'analytics';
 
 export const ContentManagement: React.FC = () => {
   const { user } = useAuthStore();
@@ -87,6 +89,7 @@ export const ContentManagement: React.FC = () => {
 
   const sections = [
     { id: 'content' as const, label: 'İçerik Yönetimi', icon: FileText, count: content.length, description: 'Blog, haberler ve sayfa içerikleri' },
+    { id: 'blog' as const, label: 'Blog Yönetimi', icon: BarChart3, count: 0, description: 'Blog yazıları ve yorum yönetimi' },
     { id: 'roadmap' as const, label: 'Roadmap', icon: MapPin, count: roadmap.length, description: 'Proje yol haritası ve milestone\'lar' },
     { id: 'team' as const, label: 'Ekip', icon: Users, count: team.length, description: 'Ekip üyeleri ve organizasyon yapısı' },
     { id: 'banners' as const, label: 'Banner\'lar', icon: Megaphone, count: banners.length, description: 'Site banner\'ları ve duyuru çubukları' },
@@ -390,6 +393,7 @@ export const ContentManagement: React.FC = () => {
           transition={{ duration: 0.3 }}
         >
           {activeSection === 'content' && renderContentSection()}
+          {activeSection === 'blog' && <BlogManagement />}
           {activeSection === 'roadmap' && <RoadmapManager />}
           {activeSection === 'team' && <TeamManager />}
           {activeSection === 'banners' && <BannerManager />}

@@ -18,6 +18,7 @@ import {
 import { BlogPost, BlogCategory } from '../../types/blog';
 import { BlogEditor } from './BlogEditor';
 import { useBlogStore } from '../../store/blogStore';
+import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 
 interface BlogPostFormProps {
@@ -31,6 +32,7 @@ export const BlogPostForm: React.FC<BlogPostFormProps> = ({
   onSave,
   onCancel
 }) => {
+  const { user } = useAuthStore();
   const { categories, fetchCategories, createPost, updatePost, publishPost } = useBlogStore();
   
   const [formData, setFormData] = useState({

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useAuthStore } from './authStore';
 import { BlogPost, BlogComment, BlogCategory, BlogStats, BlogFilters, PaginationInfo } from '../types/blog';
 import { generateSlug, calculateReadTime, extractExcerpt } from '../utils/markdown';
 import toast from 'react-hot-toast';
