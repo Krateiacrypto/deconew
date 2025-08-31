@@ -1,129 +1,187 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Settings, 
+  Database, 
   Shield, 
   Globe, 
-  Bell, 
-  Database,
-  Key,
   Mail,
-  Server,
+  Bell,
+  Palette,
+  Code,
   Save,
   RefreshCw,
-  DollarSign,
-  Zap,
-  CreditCard,
-  Lock,
+  AlertTriangle,
+  CheckCircle,
+  Info,
   Eye,
   EyeOff,
-  AlertTriangle,
-  CheckCircle
+  Copy,
+  TestTube,
+  Activity,
+  BarChart3,
+  Users,
+  Server,
+  Lock,
+  Key,
+  Zap,
+  Cloud,
+  HardDrive,
+  Wifi,
+  Monitor
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import { supabase } from '../../lib/supabase';
+import { hasPermission } from '../../utils/permissions';
 import toast from 'react-hot-toast';
 
 export const SystemSettings: React.FC = () => {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('general');
   const [isLoading, setIsLoading] = useState(false);
-  const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
+  const [showSecrets, setShowSecrets] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'testing' | 'success' | 'error' | null>(null);
 
+  // System settings state
   const [settings, setSettings] = useState({
-    general: {
-      platformName: 'DECARBONIZE.world',
-      platformDescription: 'Global CO₂ Token Platform',
-      supportEmail: 'support@decarbonize.world',
-      maintenanceMode: false,
-      registrationEnabled: true,
-      kycRequired: true,
-      defaultLanguage: 'tr',
-      timezone: 'Europe/Istanbul',
-      currency: 'USD'
-    },
-    security: {
-      twoFactorRequired: false,
-      sessionTimeout: 30,
-      passwordMinLength: 8,
-      maxLoginAttempts: 5,
-      ipWhitelist: '',
-      apiRateLimit: 1000,
-      encryptionEnabled: true,
-      auditLogging: true,
-      securityHeaders: true
-    },
-    blockchain: {
-      networkName: 'ReefChain',
-      rpcUrl: 'https://rpc.reefscan.com',
-      explorerUrl: 'https://reefscan.com',
-      gasPrice: '0.8',
-      confirmationBlocks: 3,
-      contractAddress: '0x1234567890123456789012345678901234567890',
-      privateKey: '••••••••••••••••••••••••••••••••',
-      walletAddress: '0x742d35Cc6634C0532925a3b8D4C9db96DfbF31d2'
-    },
-    trading: {
-      tradingEnabled: true,
-      minimumTradeAmount: 10,
-      maximumTradeAmount: 100000,
-      tradingFee: 0.25,
-      slippageTolerance: 0.5,
-      priceUpdateInterval: 30,
-      orderBookDepth: 50
-    },
-    staking: {
-      stakingEnabled: true,
-      minimumStakeAmount: 100,
-      maximumStakeAmount: 1000000,
-      defaultAPY: 12.5,
-      lockPeriods: [30, 90, 180, 365],
-      earlyWithdrawalPenalty: 5,
-      rewardDistributionInterval: 24
-    },
-    notifications: {
-      emailNotifications: true,
-      smsNotifications: false,
-      pushNotifications: true,
-      marketingEmails: false,
-      systemAlerts: true,
-      smtpHost: 'smtp.gmail.com',
-      smtpPort: 587,
-      smtpUser: 'noreply@decarbonize.world',
-      smtpPassword: '••••••••••••••••',
-      twilioSid: '••••••••••••••••',
-      twilioToken: '••••••••••••••••'
-    },
-    supabase: {
-      projectUrl: import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co',
-      anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '••••••••••••••••••••••••••••••••',
-      serviceRoleKey: '••••••••••••••••••••••••••••••••',
-      databaseUrl: 'postgresql://••••••••••••••••',
-      jwtSecret: '••••••••••••••••••••••••••••••••'
-    },
-    stripe: {
-      publishableKey: 'pk_test_••••••••••••••••••••••••••••••••',
-      secretKey: 'sk_test_••••••••••••••••••••••••••••••••',
-      webhookSecret: 'whsec_••••••••••••••••••••••••••••••••',
-      enabled: true,
-      currency: 'USD',
-      paymentMethods: ['card', 'bank_transfer', 'crypto']
-    },
-    api: {
-      baseUrl: 'https://api.decarbonize.world',
-      version: 'v1',
-      timeout: 30000,
-      retryAttempts: 3,
-      corsEnabled: true,
-      allowedOrigins: 'https://decarbonize.world, https://app.decarbonize.world'
-    }
+    // General Settings
+    siteName: 'DECARBONIZE.world',
+    siteDescription: 'Global CO₂ Token Platform',
+    siteUrl: 'https://decarbonize.world',
+    adminEmail: 'admin@decarbonize.world',
+    supportEmail: 'support@decarbonize.world',
+    defaultLanguage: 'tr',
+    timezone: 'Europe/Istanbul',
+    
+    // Supabase Settings
+    supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
+    supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+    supabaseServiceKey: '', // Service role key - gizli
+    databaseUrl: '', // Database direct connection
+    
+    // Security Settings
+    jwtExpiry: 3600, // 1 hour
+    refreshTokenExpiry: 2592000, // 30 days
+    maxLoginAttempts: 5,
+    passwordMinLength: 8,
+    requireEmailVerification: false,
+    enableTwoFactor: true,
+    sessionTimeout: 1800, // 30 minutes
+    
+    // API Settings
+    maxRequestSize: 3, // MB
+    requestTimeout: 30, // seconds
+    maxRows: 1000,
+    enableCors: true,
+    allowedOrigins: ['https://decarbonize.world', 'http://localhost:5173'],
+    
+    // Email Settings
+    smtpHost: 'smtp.gmail.com',
+    smtpPort: 587,
+    smtpUser: '',
+    smtpPassword: '',
+    emailFromName: 'DECARBONIZE',
+    emailFromAddress: 'noreply@decarbonize.world',
+    
+    // Notification Settings
+    enableEmailNotifications: true,
+    enablePushNotifications: false,
+    enableSmsNotifications: false,
+    notificationRetentionDays: 30,
+    
+    // Performance Settings
+    enableCaching: true,
+    cacheExpiry: 3600, // 1 hour
+    enableCompression: true,
+    enableCdn: false,
+    maxConcurrentConnections: 100,
+    
+    // Backup Settings
+    enableAutoBackup: true,
+    backupFrequency: 'daily',
+    backupRetentionDays: 30,
+    backupLocation: 'supabase',
+    
+    // Analytics Settings
+    enableAnalytics: true,
+    googleAnalyticsId: '',
+    hotjarId: '',
+    enableErrorTracking: true,
+    
+    // Blockchain Settings
+    reefChainRpc: 'https://rpc.reefscan.com',
+    reefChainExplorer: 'https://reefscan.com',
+    walletConnectProjectId: '',
+    enableWalletConnect: true,
+    
+    // ICO Settings
+    icoStartDate: '2024-02-01',
+    icoEndDate: '2024-06-30',
+    tokenPrice: 0.12,
+    minInvestment: 100,
+    maxInvestment: 50000,
+    enableIco: true,
+    
+    // Trading Settings
+    enableTrading: true,
+    tradingFee: 0.25, // %
+    minTradeAmount: 10,
+    maxTradeAmount: 100000,
+    enableStaking: true,
+    
+    // Content Settings
+    enableBlog: true,
+    enableComments: true,
+    moderateComments: true,
+    maxFileSize: 10, // MB
+    allowedFileTypes: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
+    
+    // Maintenance Settings
+    maintenanceMode: false,
+    maintenanceMessage: 'Platform bakımda. Lütfen daha sonra tekrar deneyin.',
+    enableDebugMode: false,
+    logLevel: 'info'
   });
 
-  const handleSaveSettings = async (category: string) => {
+  const tabs = [
+    { id: 'general', name: 'Genel Ayarlar', icon: Settings },
+    { id: 'supabase', name: 'Supabase Konfigürasyonu', icon: Database },
+    { id: 'security', name: 'Güvenlik', icon: Shield },
+    { id: 'api', name: 'API Ayarları', icon: Globe },
+    { id: 'email', name: 'E-posta', icon: Mail },
+    { id: 'notifications', name: 'Bildirimler', icon: Bell },
+    { id: 'performance', name: 'Performans', icon: Activity },
+    { id: 'backup', name: 'Yedekleme', icon: HardDrive },
+    { id: 'analytics', name: 'Analitik', icon: BarChart3 },
+    { id: 'blockchain', name: 'Blockchain', icon: Zap },
+    { id: 'ico', name: 'ICO Ayarları', icon: Code },
+    { id: 'maintenance', name: 'Bakım', icon: Monitor }
+  ];
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success(`${category} ayarları kaydedildi!`);
+      // Load settings from Supabase or localStorage
+      const savedSettings = localStorage.getItem('system-settings');
+      if (savedSettings) {
+        setSettings({ ...settings, ...JSON.parse(savedSettings) });
+      }
+    } catch (error) {
+      console.error('Settings load error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveSettings = async () => {
+    setIsLoading(true);
+    try {
+      // Save to localStorage for now (in real app, save to Supabase)
+      localStorage.setItem('system-settings', JSON.stringify(settings));
+      toast.success('Ayarlar kaydedildi!');
     } catch (error) {
       toast.error('Ayarlar kaydedilemedi!');
     } finally {
@@ -131,56 +189,56 @@ export const SystemSettings: React.FC = () => {
     }
   };
 
-  const toggleSecret = (field: string) => {
-    setShowSecrets(prev => ({
-      ...prev,
-      [field]: !prev[field]
-    }));
-  };
-
-  // Test Supabase connection
-  const testSupabaseConnection = async (testType: 'database' | 'auth' | 'storage') => {
+  const testSupabaseConnection = async () => {
+    setConnectionStatus('testing');
     try {
-      switch (testType) {
-        case 'database':
-          const { data, error } = await supabase.from('users').select('count').limit(1);
-          if (error) throw error;
-          toast.success('Database bağlantısı başarılı!');
-          break;
-        case 'auth':
-          const { data: sessionData } = await supabase.auth.getSession();
-          toast.success('Auth servisi çalışıyor!');
-          break;
-        case 'storage':
-          const { data: buckets, error: storageError } = await supabase.storage.listBuckets();
-          if (storageError) throw storageError;
-          toast.success('Storage servisi çalışıyor!');
-          break;
+      // Test Supabase connection
+      const response = await fetch(`${settings.supabaseUrl}/rest/v1/`, {
+        headers: {
+          'apikey': settings.supabaseAnonKey,
+          'Authorization': `Bearer ${settings.supabaseAnonKey}`
+        }
+      });
+      
+      if (response.ok) {
+        setConnectionStatus('success');
+        toast.success('Supabase bağlantısı başarılı!');
+      } else {
+        setConnectionStatus('error');
+        toast.error('Supabase bağlantısı başarısız!');
       }
-    } catch (error: any) {
-      toast.error(`${testType} bağlantı hatası: ${handleSupabaseError(error)}`);
+    } catch (error) {
+      setConnectionStatus('error');
+      toast.error('Bağlantı testi başarısız!');
     }
   };
 
-  const tabs = [
-    { id: 'general', name: 'Genel', icon: Settings },
-    { id: 'security', name: 'Güvenlik', icon: Shield },
-    { id: 'blockchain', name: 'Blockchain', icon: Server },
-    { id: 'trading', name: 'Trading', icon: Globe },
-    { id: 'staking', name: 'Staking', icon: Zap },
-    { id: 'notifications', name: 'Bildirimler', icon: Bell },
-    { id: 'supabase', name: 'Supabase', icon: Database },
-    { id: 'stripe', name: 'Stripe', icon: CreditCard },
-    { id: 'api', name: 'API', icon: Key }
-  ];
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Panoya kopyalandı!');
+  };
 
-  if (user?.role !== 'superadmin') {
+  const resetToDefaults = () => {
+    if (window.confirm('Tüm ayarları varsayılan değerlere sıfırlamak istediğinizden emin misiniz?')) {
+      setSettings({
+        ...settings,
+        // Reset to default values
+        siteName: 'DECARBONIZE.world',
+        siteDescription: 'Global CO₂ Token Platform',
+        defaultLanguage: 'tr',
+        timezone: 'Europe/Istanbul'
+      });
+      toast.success('Ayarlar varsayılan değerlere sıfırlandı!');
+    }
+  };
+
+  if (!hasPermission(user, 'system.settings')) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Lock className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <Shield className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Erişim Reddedildi</h2>
-          <p className="text-gray-600">Sistem ayarlarına sadece Süper Admin erişebilir.</p>
+          <p className="text-gray-600">Bu sayfaya erişim yetkiniz bulunmamaktadır.</p>
         </div>
       </div>
     );
@@ -188,155 +246,285 @@ export const SystemSettings: React.FC = () => {
 
   const renderGeneralSettings = () => (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Platform Adı</label>
-          <input
-            type="text"
-            value={settings.general.platformName}
-            onChange={(e) => setSettings({
-              ...settings,
-              general: { ...settings.general, platformName: e.target.value }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Destek E-postası</label>
-          <input
-            type="email"
-            value={settings.general.supportEmail}
-            onChange={(e) => setSettings({
-              ...settings,
-              general: { ...settings.general, supportEmail: e.target.value }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          />
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Site Bilgileri</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Site Adı</label>
+            <input
+              type="text"
+              value={settings.siteName}
+              onChange={(e) => setSettings({...settings, siteName: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Site URL</label>
+            <input
+              type="url"
+              value={settings.siteUrl}
+              onChange={(e) => setSettings({...settings, siteUrl: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Site Açıklaması</label>
+            <textarea
+              value={settings.siteDescription}
+              onChange={(e) => setSettings({...settings, siteDescription: e.target.value})}
+              rows={3}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Platform Açıklaması</label>
-        <textarea
-          value={settings.general.platformDescription}
-          onChange={(e) => setSettings({
-            ...settings,
-            general: { ...settings.general, platformDescription: e.target.value }
-          })}
-          rows={3}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-        />
-      </div>
-
-      <div className="grid grid-cols-3 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Varsayılan Dil</label>
-          <select
-            value={settings.general.defaultLanguage}
-            onChange={(e) => setSettings({
-              ...settings,
-              general: { ...settings.general, defaultLanguage: e.target.value }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          >
-            <option value="tr">Türkçe</option>
-            <option value="en">English</option>
-            <option value="de">Deutsch</option>
-            <option value="fr">Français</option>
-          </select>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Zaman Dilimi</label>
-          <select
-            value={settings.general.timezone}
-            onChange={(e) => setSettings({
-              ...settings,
-              general: { ...settings.general, timezone: e.target.value }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          >
-            <option value="Europe/Istanbul">İstanbul</option>
-            <option value="UTC">UTC</option>
-            <option value="America/New_York">New York</option>
-            <option value="Europe/London">Londra</option>
-          </select>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Para Birimi</label>
-          <select
-            value={settings.general.currency}
-            onChange={(e) => setSettings({
-              ...settings,
-              general: { ...settings.general, currency: e.target.value }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          >
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-            <option value="TRY">TRY</option>
-          </select>
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Lokalizasyon</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Varsayılan Dil</label>
+            <select
+              value={settings.defaultLanguage}
+              onChange={(e) => setSettings({...settings, defaultLanguage: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            >
+              <option value="tr">Türkçe</option>
+              <option value="en">English</option>
+              <option value="de">Deutsch</option>
+              <option value="fr">Français</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Zaman Dilimi</label>
+            <select
+              value={settings.timezone}
+              onChange={(e) => setSettings({...settings, timezone: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            >
+              <option value="Europe/Istanbul">Europe/Istanbul (UTC+3)</option>
+              <option value="UTC">UTC (UTC+0)</option>
+              <option value="America/New_York">America/New_York (UTC-5)</option>
+              <option value="Europe/London">Europe/London (UTC+0)</option>
+            </select>
+          </div>
         </div>
       </div>
+    </div>
+  );
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
-          <div>
-            <h4 className="font-medium text-red-900">Bakım Modu</h4>
-            <p className="text-sm text-red-700">Platform bakım modunda olduğunda kullanıcılar erişemez</p>
+  const renderSupabaseSettings = () => (
+    <div className="space-y-6">
+      {/* Connection Status */}
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-900">Supabase Bağlantı Durumu</h3>
+          <button
+            onClick={testSupabaseConnection}
+            disabled={connectionStatus === 'testing'}
+            className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+          >
+            {connectionStatus === 'testing' ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <TestTube className="w-4 h-4" />
+            )}
+            <span>{connectionStatus === 'testing' ? 'Test Ediliyor...' : 'Bağlantıyı Test Et'}</span>
+          </button>
+        </div>
+        
+        {connectionStatus && (
+          <div className={`p-4 rounded-lg border ${
+            connectionStatus === 'success' ? 'bg-emerald-50 border-emerald-200' :
+            connectionStatus === 'error' ? 'bg-red-50 border-red-200' :
+            'bg-blue-50 border-blue-200'
+          }`}>
+            <div className="flex items-center space-x-2">
+              {connectionStatus === 'success' && <CheckCircle className="w-5 h-5 text-emerald-600" />}
+              {connectionStatus === 'error' && <AlertTriangle className="w-5 h-5 text-red-600" />}
+              {connectionStatus === 'testing' && <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />}
+              <span className={`font-medium ${
+                connectionStatus === 'success' ? 'text-emerald-800' :
+                connectionStatus === 'error' ? 'text-red-800' :
+                'text-blue-800'
+              }`}>
+                {connectionStatus === 'success' && 'Supabase bağlantısı başarılı!'}
+                {connectionStatus === 'error' && 'Supabase bağlantısı başarısız!'}
+                {connectionStatus === 'testing' && 'Bağlantı test ediliyor...'}
+              </span>
+            </div>
           </div>
-          <label className="relative inline-flex items-center cursor-pointer">
+        )}
+      </div>
+
+      {/* Supabase Configuration */}
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Supabase Konfigürasyonu</h3>
+        
+        <div className="space-y-4">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">Supabase URL</label>
+              <button
+                onClick={() => copyToClipboard(settings.supabaseUrl)}
+                className="text-emerald-600 hover:text-emerald-700"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
+            </div>
             <input
-              type="checkbox"
-              checked={settings.general.maintenanceMode}
-              onChange={(e) => setSettings({
-                ...settings,
-                general: { ...settings.general, maintenanceMode: e.target.checked }
-              })}
-              className="sr-only peer"
+              type="url"
+              value={settings.supabaseUrl}
+              onChange={(e) => setSettings({...settings, supabaseUrl: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
+              placeholder="https://your-project-ref.supabase.co"
             />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
-          </label>
+            <p className="text-xs text-gray-500 mt-1">
+              Supabase Dashboard &gt; Settings &gt; API &gt; Project URL
+            </p>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">Anon Key (Public)</label>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setShowSecrets(!showSecrets)}
+                  className="text-gray-600 hover:text-gray-800"
+                >
+                  {showSecrets ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={() => copyToClipboard(settings.supabaseAnonKey)}
+                  className="text-emerald-600 hover:text-emerald-700"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <input
+              type={showSecrets ? 'text' : 'password'}
+              value={settings.supabaseAnonKey}
+              onChange={(e) => setSettings({...settings, supabaseAnonKey: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
+              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Supabase Dashboard &gt; Settings &gt; API &gt; anon public key
+            </p>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">Service Role Key (Gizli)</label>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setShowSecrets(!showSecrets)}
+                  className="text-gray-600 hover:text-gray-800"
+                >
+                  {showSecrets ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={() => copyToClipboard(settings.supabaseServiceKey)}
+                  className="text-emerald-600 hover:text-emerald-700"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <input
+              type={showSecrets ? 'text' : 'password'}
+              value={settings.supabaseServiceKey}
+              onChange={(e) => setSettings({...settings, supabaseServiceKey: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
+              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            />
+            <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start space-x-2">
+                <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-red-800">Güvenlik Uyarısı</p>
+                  <p className="text-xs text-red-700 mt-1">
+                    Service Role Key sadece server-side işlemler için kullanılmalıdır. 
+                    Frontend'de asla kullanmayın! Bu anahtar tüm veritabanı erişim yetkisi verir.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Database URL (Migrations için)</label>
+            <input
+              type={showSecrets ? 'text' : 'password'}
+              value={settings.databaseUrl}
+              onChange={(e) => setSettings({...settings, databaseUrl: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
+              placeholder="postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Supabase Dashboard &gt; Settings &gt; Database &gt; Connection string
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-          <div>
-            <h4 className="font-medium text-emerald-900">Kayıt Açık</h4>
-            <p className="text-sm text-emerald-700">Yeni kullanıcı kayıtlarına izin ver</p>
+        {/* Supabase Usage Stats */}
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+          <h4 className="font-medium text-blue-900 mb-3">Kullanım İstatistikleri</h4>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">2.4GB</div>
+              <div className="text-sm text-blue-800">Database Boyutu</div>
+              <div className="text-xs text-blue-600">8GB limitinden</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">156GB</div>
+              <div className="text-sm text-blue-800">Bandwidth</div>
+              <div className="text-xs text-blue-600">250GB limitinden</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">12.5K</div>
+              <div className="text-sm text-blue-800">Aktif Kullanıcı</div>
+              <div className="text-xs text-blue-600">100K limitinden</div>
+            </div>
           </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.general.registrationEnabled}
-              onChange={(e) => setSettings({
-                ...settings,
-                general: { ...settings.general, registrationEnabled: e.target.checked }
-              })}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-          </label>
         </div>
+      </div>
 
-        <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <div>
-            <h4 className="font-medium text-blue-900">KYC Zorunlu</h4>
-            <p className="text-sm text-blue-700">Tüm kullanıcılar için KYC doğrulaması zorunlu</p>
+      {/* Environment Variables Guide */}
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Environment Variables Rehberi</h3>
+        
+        <div className="space-y-4">
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+            <h4 className="font-medium text-emerald-800 mb-2">Frontend (Public) Variables</h4>
+            <div className="space-y-2 text-sm">
+              <div className="font-mono bg-white p-2 rounded border">
+                <span className="text-emerald-600">VITE_SUPABASE_URL</span>=https://your-project-ref.supabase.co
+              </div>
+              <div className="font-mono bg-white p-2 rounded border">
+                <span className="text-emerald-600">VITE_SUPABASE_ANON_KEY</span>=eyJhbGciOiJIUzI1NiIs...
+              </div>
+              <p className="text-emerald-700 text-xs">
+                ✅ Bu değişkenler frontend'de güvenle kullanılabilir. RLS politikaları ile korunurlar.
+              </p>
+            </div>
           </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.general.kycRequired}
-              onChange={(e) => setSettings({
-                ...settings,
-                general: { ...settings.general, kycRequired: e.target.checked }
-              })}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-          </label>
+
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <h4 className="font-medium text-red-800 mb-2">Backend (Private) Variables</h4>
+            <div className="space-y-2 text-sm">
+              <div className="font-mono bg-white p-2 rounded border">
+                <span className="text-red-600">SUPABASE_SERVICE_ROLE_KEY</span>=eyJhbGciOiJIUzI1NiIs...
+              </div>
+              <div className="font-mono bg-white p-2 rounded border">
+                <span className="text-red-600">DATABASE_URL</span>=postgresql://postgres:...
+              </div>
+              <p className="text-red-700 text-xs">
+                ⚠️ Bu değişkenler GİZLİ tutulmalı! Sadece server-side işlemler için kullanın.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -344,740 +532,285 @@ export const SystemSettings: React.FC = () => {
 
   const renderSecuritySettings = () => (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Oturum Zaman Aşımı (dakika)</label>
-          <input
-            type="number"
-            value={settings.security.sessionTimeout}
-            onChange={(e) => setSettings({
-              ...settings,
-              security: { ...settings.security, sessionTimeout: parseInt(e.target.value) }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          />
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Authentication Ayarları</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">JWT Token Süresi (saniye)</label>
+            <input
+              type="number"
+              value={settings.jwtExpiry}
+              onChange={(e) => setSettings({...settings, jwtExpiry: parseInt(e.target.value)})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">Önerilen: 3600 (1 saat)</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Refresh Token Süresi (saniye)</label>
+            <input
+              type="number"
+              value={settings.refreshTokenExpiry}
+              onChange={(e) => setSettings({...settings, refreshTokenExpiry: parseInt(e.target.value)})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">Önerilen: 2592000 (30 gün)</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Maksimum Giriş Denemesi</label>
+            <input
+              type="number"
+              value={settings.maxLoginAttempts}
+              onChange={(e) => setSettings({...settings, maxLoginAttempts: parseInt(e.target.value)})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Şifre Uzunluğu</label>
+            <input
+              type="number"
+              value={settings.passwordMinLength}
+              onChange={(e) => setSettings({...settings, passwordMinLength: parseInt(e.target.value)})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
         </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Min. Şifre Uzunluğu</label>
-          <input
-            type="number"
-            value={settings.security.passwordMinLength}
-            onChange={(e) => setSettings({
-              ...settings,
-              security: { ...settings.security, passwordMinLength: parseInt(e.target.value) }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          />
-        </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Max. Giriş Denemesi</label>
-          <input
-            type="number"
-            value={settings.security.maxLoginAttempts}
-            onChange={(e) => setSettings({
-              ...settings,
-              security: { ...settings.security, maxLoginAttempts: parseInt(e.target.value) }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">API Rate Limit (req/min)</label>
-          <input
-            type="number"
-            value={settings.security.apiRateLimit}
-            onChange={(e) => setSettings({
-              ...settings,
-              security: { ...settings.security, apiRateLimit: parseInt(e.target.value) }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">IP Whitelist (virgülle ayırın)</label>
-        <textarea
-          value={settings.security.ipWhitelist}
-          onChange={(e) => setSettings({
-            ...settings,
-            security: { ...settings.security, ipWhitelist: e.target.value }
-          })}
-          rows={3}
-          placeholder="192.168.1.1, 10.0.0.1"
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-        />
-      </div>
-
-      <div className="space-y-4">
-        {[
-          { key: 'twoFactorRequired', label: '2FA Zorunlu', desc: 'Tüm kullanıcılar için iki faktörlü kimlik doğrulama zorunlu' },
-          { key: 'encryptionEnabled', label: 'Şifreleme Aktif', desc: 'Veri şifreleme ve güvenli iletişim' },
-          { key: 'auditLogging', label: 'Denetim Logları', desc: 'Tüm kullanıcı aktivitelerini kaydet' },
-          { key: 'securityHeaders', label: 'Güvenlik Headers', desc: 'HTTP güvenlik başlıklarını etkinleştir' }
-        ].map((setting) => (
-          <div key={setting.key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="mt-6 space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-gray-900">{setting.label}</h4>
-              <p className="text-sm text-gray-600">{setting.desc}</p>
+              <h4 className="font-medium text-gray-900">E-posta Doğrulama Zorunlu</h4>
+              <p className="text-sm text-gray-600">Kullanıcılar kayıt olduktan sonra e-posta doğrulaması yapmalı mı?</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={settings.security[setting.key as keyof typeof settings.security] as boolean}
-                onChange={(e) => setSettings({
-                  ...settings,
-                  security: { ...settings.security, [setting.key]: e.target.checked }
-                })}
+                checked={settings.requireEmailVerification}
+                onChange={(e) => setSettings({...settings, requireEmailVerification: e.target.checked})}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
             </label>
           </div>
-        ))}
-      </div>
-    </div>
-  );
 
-  const renderBlockchainSettings = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Network Adı</label>
-          <input
-            type="text"
-            value={settings.blockchain.networkName}
-            onChange={(e) => setSettings({
-              ...settings,
-              blockchain: { ...settings.blockchain, networkName: e.target.value }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Gas Fiyatı (Gwei)</label>
-          <input
-            type="text"
-            value={settings.blockchain.gasPrice}
-            onChange={(e) => setSettings({
-              ...settings,
-              blockchain: { ...settings.blockchain, gasPrice: e.target.value }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">RPC URL</label>
-        <input
-          type="url"
-          value={settings.blockchain.rpcUrl}
-          onChange={(e) => setSettings({
-            ...settings,
-            blockchain: { ...settings.blockchain, rpcUrl: e.target.value }
-          })}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Explorer URL</label>
-        <input
-          type="url"
-          value={settings.blockchain.explorerUrl}
-          onChange={(e) => setSettings({
-            ...settings,
-            blockchain: { ...settings.blockchain, explorerUrl: e.target.value }
-          })}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Contract Address</label>
-          <input
-            type="text"
-            value={settings.blockchain.contractAddress}
-            onChange={(e) => setSettings({
-              ...settings,
-              blockchain: { ...settings.blockchain, contractAddress: e.target.value }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Onay Blok Sayısı</label>
-          <input
-            type="number"
-            value={settings.blockchain.confirmationBlocks}
-            onChange={(e) => setSettings({
-              ...settings,
-              blockchain: { ...settings.blockchain, confirmationBlocks: parseInt(e.target.value) }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          />
-        </div>
-      </div>
-
-      {/* Sensitive Fields */}
-      <div className="space-y-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-        <div className="flex items-center space-x-2 mb-4">
-          <AlertTriangle className="w-5 h-5 text-yellow-600" />
-          <h4 className="font-medium text-yellow-900">Hassas Bilgiler</h4>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Private Key</label>
-          <div className="relative">
-            <input
-              type={showSecrets.privateKey ? 'text' : 'password'}
-              value={settings.blockchain.privateKey}
-              onChange={(e) => setSettings({
-                ...settings,
-                blockchain: { ...settings.blockchain, privateKey: e.target.value }
-              })}
-              className="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
-            />
-            <button
-              type="button"
-              onClick={() => toggleSecret('privateKey')}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2"
-            >
-              {showSecrets.privateKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Wallet Address</label>
-          <input
-            type="text"
-            value={settings.blockchain.walletAddress}
-            onChange={(e) => setSettings({
-              ...settings,
-              blockchain: { ...settings.blockchain, walletAddress: e.target.value }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
-          />
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderStakingSettings = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-        <div>
-          <h4 className="font-medium text-emerald-900">Staking Aktif</h4>
-          <p className="text-sm text-emerald-700">Platform staking özelliğini etkinleştir</p>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={settings.staking.stakingEnabled}
-            onChange={(e) => setSettings({
-              ...settings,
-              staking: { ...settings.staking, stakingEnabled: e.target.checked }
-            })}
-            className="sr-only peer"
-          />
-          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-        </label>
-      </div>
-
-      <div className="grid grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Min. Stake Miktarı</label>
-          <input
-            type="number"
-            value={settings.staking.minimumStakeAmount}
-            onChange={(e) => setSettings({
-              ...settings,
-              staking: { ...settings.staking, minimumStakeAmount: parseInt(e.target.value) }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Max. Stake Miktarı</label>
-          <input
-            type="number"
-            value={settings.staking.maximumStakeAmount}
-            onChange={(e) => setSettings({
-              ...settings,
-              staking: { ...settings.staking, maximumStakeAmount: parseInt(e.target.value) }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Varsayılan APY (%)</label>
-          <input
-            type="number"
-            step="0.1"
-            value={settings.staking.defaultAPY}
-            onChange={(e) => setSettings({
-              ...settings,
-              staking: { ...settings.staking, defaultAPY: parseFloat(e.target.value) }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Erken Çekim Cezası (%)</label>
-          <input
-            type="number"
-            step="0.1"
-            value={settings.staking.earlyWithdrawalPenalty}
-            onChange={(e) => setSettings({
-              ...settings,
-              staking: { ...settings.staking, earlyWithdrawalPenalty: parseFloat(e.target.value) }
-            })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Kilit Süreleri (gün, virgülle ayırın)</label>
-        <input
-          type="text"
-          value={settings.staking.lockPeriods.join(', ')}
-          onChange={(e) => setSettings({
-            ...settings,
-            staking: { 
-              ...settings.staking, 
-              lockPeriods: e.target.value.split(',').map(p => parseInt(p.trim())).filter(p => !isNaN(p))
-            }
-          })}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          placeholder="30, 90, 180, 365"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Ödül Dağıtım Aralığı (saat)</label>
-        <input
-          type="number"
-          value={settings.staking.rewardDistributionInterval}
-          onChange={(e) => setSettings({
-            ...settings,
-            staking: { ...settings.staking, rewardDistributionInterval: parseInt(e.target.value) }
-          })}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-        />
-      </div>
-    </div>
-  );
-
-  const renderSupabaseSettings = () => (
-    <div className="space-y-6">
-      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <div className="flex items-center space-x-2 mb-2">
-          <Database className="w-5 h-5 text-blue-600" />
-          <h4 className="font-medium text-blue-900">Supabase Konfigürasyonu</h4>
-        </div>
-        <p className="text-sm text-blue-700">
-          Veritabanı, authentication, storage ve real-time servis ayarları. 
-          Bu ayarlar platform'un tüm backend işlevlerini kontrol eder.
-        </p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Project URL
-          <span className="text-xs text-gray-500 ml-2">
-            (Supabase Dashboard > Settings > API > Project URL)
-          </span>
-        </label>
-        <input
-          type="url"
-          value={settings.supabase.projectUrl}
-          onChange={(e) => setSettings({
-            ...settings,
-            supabase: { ...settings.supabase, projectUrl: e.target.value }
-          })}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          placeholder="https://your-project-ref.supabase.co"
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          Supabase projenizin ana URL'si. Tüm API çağrıları bu URL üzerinden yapılır.
-        </p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Anon Key (Public)
-          <span className="text-xs text-gray-500 ml-2">
-            (Dashboard > Settings > API > anon public)
-          </span>
-        </label>
-        <div className="relative">
-          <input
-            type={showSecrets.anonKey ? 'text' : 'password'}
-            value={settings.supabase.anonKey}
-            onChange={(e) => setSettings({
-              ...settings,
-              supabase: { ...settings.supabase, anonKey: e.target.value }
-            })}
-            className="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
-            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-          />
-          <button
-            type="button"
-            onClick={() => toggleSecret('anonKey')}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2"
-          >
-            {showSecrets.anonKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
-        </div>
-        <p className="text-xs text-gray-500 mt-1">
-          Frontend'de güvenle kullanılabilen public API anahtarı. RLS politikaları ile korunur.
-          Bu anahtar browser'da görünür olduğu için hassas işlemler için kullanılmamalıdır.
-        </p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Service Role Key (Private)
-          <span className="text-xs text-red-500 ml-2">
-            (GİZLİ - Sadece server-side)
-          </span>
-        </label>
-        <div className="relative">
-          <input
-            type={showSecrets.serviceRoleKey ? 'text' : 'password'}
-            value={settings.supabase.serviceRoleKey}
-            onChange={(e) => setSettings({
-              ...settings,
-              supabase: { ...settings.supabase, serviceRoleKey: e.target.value }
-            })}
-            className="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
-          />
-          <button
-            type="button"
-            onClick={() => toggleSecret('serviceRoleKey')}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2"
-          >
-            {showSecrets.serviceRoleKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
-        </div>
-        <div className="mt-1 p-2 bg-red-50 rounded border border-red-200">
-          <p className="text-xs text-red-700">
-            <strong>UYARI:</strong> Bu anahtar tüm veritabanı yetkilerine sahiptir. 
-            Sadece server-side işlemler için kullanın. Frontend'de asla kullanmayın!
-            Admin paneli, bulk operations ve migrations için gereklidir.
-          </p>
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Database URL (Direct Connection)
-          <span className="text-xs text-gray-500 ml-2">
-            (Dashboard > Settings > Database > Connection string)
-          </span>
-        </label>
-        <div className="relative">
-          <input
-            type={showSecrets.databaseUrl ? 'text' : 'password'}
-            value={settings.supabase.databaseUrl}
-            onChange={(e) => setSettings({
-              ...settings,
-              supabase: { ...settings.supabase, databaseUrl: e.target.value }
-            })}
-            className="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
-            placeholder="postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres"
-          />
-          <button
-            type="button"
-            onClick={() => toggleSecret('databaseUrl')}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2"
-          >
-            {showSecrets.databaseUrl ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
-        </div>
-        <p className="text-xs text-gray-500 mt-1">
-          PostgreSQL veritabanına direkt bağlantı. Database migrations, 
-          bulk data operations ve admin scripts için kullanılır. 
-          Production'da connection pooling kullanın.
-        </p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          JWT Secret
-          <span className="text-xs text-gray-500 ml-2">
-            (Dashboard > Settings > API > JWT Settings)
-          </span>
-        </label>
-        <div className="relative">
-          <input
-            type={showSecrets.jwtSecret ? 'text' : 'password'}
-            value={settings.supabase.jwtSecret}
-            onChange={(e) => setSettings({
-              ...settings,
-              supabase: { ...settings.supabase, jwtSecret: e.target.value }
-            })}
-            className="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
-          />
-          <button
-            type="button"
-            onClick={() => toggleSecret('jwtSecret')}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2"
-          >
-            {showSecrets.jwtSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
-        </div>
-        <p className="text-xs text-gray-500 mt-1">
-          JWT token'larını imzalamak için kullanılan secret key. 
-          Auth token'larının güvenliğini sağlar. Değiştirirseniz tüm kullanıcılar logout olur.
-        </p>
-      </div>
-
-      {/* Connection Test */}
-      <div className="p-4 bg-gray-50 rounded-lg">
-        <h4 className="font-medium text-gray-900 mb-3">Bağlantı Testi</h4>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => testSupabaseConnection('database')}
-            className="px-3 py-2 bg-emerald-600 text-white rounded text-sm hover:bg-emerald-700"
-          >
-            Database Test
-          </button>
-          <button
-            onClick={() => testSupabaseConnection('auth')}
-            className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-          >
-            Auth Test
-          </button>
-          <button
-            onClick={() => testSupabaseConnection('storage')}
-            className="px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700"
-          >
-            Storage Test
-          </button>
-        </div>
-      </div>
-
-      {/* Usage Statistics */}
-      <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-        <h4 className="font-medium text-emerald-900 mb-3">Kullanım İstatistikleri</h4>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-emerald-700">Database Boyutu:</span>
-            <p className="font-medium text-emerald-900">~50MB / 500MB</p>
-          </div>
-          <div>
-            <span className="text-emerald-700">API Requests:</span>
-            <p className="font-medium text-emerald-900">~1.2K / 50K</p>
-          </div>
-          <div>
-            <span className="text-emerald-700">Storage:</span>
-            <p className="font-medium text-emerald-900">~25MB / 1GB</p>
-          </div>
-          <div>
-            <span className="text-emerald-700">Bandwidth:</span>
-            <p className="font-medium text-emerald-900">~150MB / 5GB</p>
-          </div>
-        </div>
-        <p className="text-xs text-emerald-700 mt-2">
-          Free tier limitleri. Pro plan'a geçiş için Dashboard > Settings > Billing
-        </p>
-      </div>
-    </div>
-  );
-
-  const renderStripeSettings = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-        <div>
-          <h4 className="font-medium text-emerald-900">Stripe Entegrasyonu</h4>
-          <p className="text-sm text-emerald-700">
-            ICO token satışları ve premium özellikler için ödeme işlemleri. 
-            Supabase Edge Functions ile güvenli webhook handling.
-          </p>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={settings.stripe.enabled}
-            onChange={(e) => setSettings({
-              ...settings,
-              stripe: { ...settings.stripe, enabled: e.target.checked }
-            })}
-            className="sr-only peer"
-          />
-          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-        </label>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Publishable Key (Public)
-          <span className="text-xs text-gray-500 ml-2">
-            (Stripe Dashboard > Developers > API keys > Publishable key)
-          </span>
-        </label>
-        <input
-          type="text"
-          value={settings.stripe.publishableKey}
-          onChange={(e) => setSettings({
-            ...settings,
-            stripe: { ...settings.stripe, publishableKey: e.target.value }
-          })}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
-          placeholder="pk_test_... veya pk_live_..."
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          Frontend'de güvenle kullanılabilen public key. Stripe Elements ve checkout için gerekli.
-        </p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Secret Key (Private)
-          <span className="text-xs text-red-500 ml-2">
-            (GİZLİ - Sadece server-side)
-          </span>
-        </label>
-        <div className="relative">
-          <input
-            type={showSecrets.stripeSecret ? 'text' : 'password'}
-            value={settings.stripe.secretKey}
-            onChange={(e) => setSettings({
-              ...settings,
-              stripe: { ...settings.stripe, secretKey: e.target.value }
-            })}
-            className="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
-            placeholder="sk_test_... veya sk_live_..."
-          />
-          <button
-            type="button"
-            onClick={() => toggleSecret('stripeSecret')}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2"
-          >
-            {showSecrets.stripeSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
-        </div>
-        <div className="mt-1 p-2 bg-red-50 rounded border border-red-200">
-          <p className="text-xs text-red-700">
-            <strong>UYARI:</strong> Bu anahtar ödeme işlemlerini gerçekleştirebilir. 
-            Sadece Supabase Edge Functions'da kullanın. Frontend\'de asla kullanmayın!
-          </p>
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Webhook Secret
-          <span className="text-xs text-gray-500 ml-2">
-            (Stripe Dashboard > Developers > Webhooks > Endpoint secret)
-          </span>
-        </label>
-        <div className="relative">
-          <input
-            type={showSecrets.webhookSecret ? 'text' : 'password'}
-            value={settings.stripe.webhookSecret}
-            onChange={(e) => setSettings({
-              ...settings,
-              stripe: { ...settings.stripe, webhookSecret: e.target.value }
-            })}
-            className="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
-            placeholder="whsec_..."
-          />
-          <button
-            type="button"
-            onClick={() => toggleSecret('webhookSecret')}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2"
-          >
-            {showSecrets.webhookSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
-        </div>
-        <p className="text-xs text-gray-500 mt-1">
-          Stripe webhook'larını doğrulamak için kullanılır. 
-          Ödeme durumu güncellemeleri ve güvenlik için kritiktir.
-          Webhook endpoint: https://your-domain.com/api/stripe/webhook
-        </p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Para Birimi</label>
-        <select
-          value={settings.stripe.currency}
-          onChange={(e) => setSettings({
-            ...settings,
-            stripe: { ...settings.stripe, currency: e.target.value }
-          })}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-        >
-          <option value="USD">USD</option>
-          <option value="EUR">EUR</option>
-          <option value="TRY">TRY</option>
-        </select>
-        <p className="text-xs text-gray-500 mt-1">
-          ICO token satışları için kullanılacak ana para birimi. 
-          Değiştirmek mevcut fiyatlandırmayı etkileyebilir.
-        </p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Ödeme Yöntemleri</label>
-        <div className="space-y-2">
-          {['card', 'bank_transfer', 'crypto'].map(method => (
-            <div key={method} className="flex items-center">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-gray-900">İki Faktörlü Kimlik Doğrulama</h4>
+              <p className="text-sm text-gray-600">2FA desteğini etkinleştir</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                id={method}
-                checked={settings.stripe.paymentMethods.includes(method)}
-                onChange={(e) => {
-                  const methods = e.target.checked
-                    ? [...settings.stripe.paymentMethods, method]
-                    : settings.stripe.paymentMethods.filter(m => m !== method);
-                  setSettings({
-                    ...settings,
-                    stripe: { ...settings.stripe, paymentMethods: methods }
-                  });
-                }}
-                className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                checked={settings.enableTwoFactor}
+                onChange={(e) => setSettings({...settings, enableTwoFactor: e.target.checked})}
+                className="sr-only peer"
               />
-              <label htmlFor={method} className="ml-2 block text-sm text-gray-900">
-                {method === 'card' ? 'Kredi Kartı' :
-                 method === 'bank_transfer' ? 'Banka Transferi' : 'Kripto Para'}
-              </label>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* RLS Policies Status */}
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Row Level Security (RLS) Durumu</h3>
+        
+        <div className="space-y-3">
+          {[
+            { table: 'users', status: 'active', policies: 4 },
+            { table: 'projects', status: 'active', policies: 5 },
+            { table: 'blog_posts', status: 'active', policies: 3 },
+            { table: 'blog_categories', status: 'active', policies: 2 },
+            { table: 'kyc_applications', status: 'active', policies: 3 },
+            { table: 'investments', status: 'active', policies: 3 },
+            { table: 'staking_pools', status: 'active', policies: 2 },
+            { table: 'staking_positions', status: 'active', policies: 3 }
+          ].map((table, index) => (
+            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className={`w-3 h-3 rounded-full ${
+                  table.status === 'active' ? 'bg-emerald-500' : 'bg-red-500'
+                }`}></div>
+                <span className="font-medium text-gray-900">{table.table}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">{table.policies} politika</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  table.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  {table.status === 'active' ? 'Aktif' : 'Pasif'}
+                </span>
+              </div>
             </div>
           ))}
         </div>
-        <p className="text-xs text-gray-500 mt-2">
-          ICO katılımcıları için mevcut ödeme seçenekleri. 
-          Kripto para ödemeleri için ek entegrasyon gerekebilir.
-        </p>
+      </div>
+    </div>
+  );
+
+  const renderAPISettings = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">API Konfigürasyonu</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Maksimum Request Boyutu (MB)</label>
+            <input
+              type="number"
+              value={settings.maxRequestSize}
+              onChange={(e) => setSettings({...settings, maxRequestSize: parseInt(e.target.value)})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Request Timeout (saniye)</label>
+            <input
+              type="number"
+              value={settings.requestTimeout}
+              onChange={(e) => setSettings({...settings, requestTimeout: parseInt(e.target.value)})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Maksimum Satır Sayısı</label>
+            <input
+              type="number"
+              value={settings.maxRows}
+              onChange={(e) => setSettings({...settings, maxRows: parseInt(e.target.value)})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Maksimum Bağlantı</label>
+            <input
+              type="number"
+              value={settings.maxConcurrentConnections}
+              onChange={(e) => setSettings({...settings, maxConcurrentConnections: parseInt(e.target.value)})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-medium text-gray-900">CORS Ayarları</h4>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.enableCors}
+                onChange={(e) => setSettings({...settings, enableCors: e.target.checked})}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+          
+          {settings.enableCors && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">İzin Verilen Origin'ler</label>
+              <textarea
+                value={settings.allowedOrigins.join('\n')}
+                onChange={(e) => setSettings({...settings, allowedOrigins: e.target.value.split('\n').filter(url => url.trim())})}
+                rows={4}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
+                placeholder="https://your-domain.com&#10;http://localhost:5173"
+              />
+              <p className="text-xs text-gray-500 mt-1">Her satıra bir URL yazın</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderMaintenanceSettings = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Bakım Modu</h3>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div>
+              <h4 className="font-medium text-yellow-900">Bakım Modu</h4>
+              <p className="text-sm text-yellow-700">Site bakım modunda iken sadece adminler erişebilir</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.maintenanceMode}
+                onChange={(e) => setSettings({...settings, maintenanceMode: e.target.checked})}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
+            </label>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Bakım Mesajı</label>
+            <textarea
+              value={settings.maintenanceMessage}
+              onChange={(e) => setSettings({...settings, maintenanceMessage: e.target.value})}
+              rows={3}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-gray-900">Debug Modu</h4>
+              <p className="text-sm text-gray-600">Geliştirici araçları ve detaylı loglar</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.enableDebugMode}
+                onChange={(e) => setSettings({...settings, enableDebugMode: e.target.checked})}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Log Seviyesi</label>
+            <select
+              value={settings.logLevel}
+              onChange={(e) => setSettings({...settings, logLevel: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            >
+              <option value="error">Error</option>
+              <option value="warn">Warning</option>
+              <option value="info">Info</option>
+              <option value="debug">Debug</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      {/* Stripe Test Mode Info */}
-      <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-        <h4 className="font-medium text-yellow-900 mb-2">Test Mode Bilgileri</h4>
-        <div className="text-sm text-yellow-800 space-y-1">
-          <p><strong>Test Kart Numaraları:</strong></p>
-          <p>• Visa: 4242 4242 4242 4242</p>
-          <p>• Mastercard: 5555 5555 5555 4444</p>
-          <p>• Amex: 3782 822463 10005</p>
-          <p>• CVV: Herhangi 3-4 haneli sayı</p>
-          <p>• Tarih: Gelecekteki herhangi bir tarih</p>
+      {/* System Health */}
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Sistem Sağlığı</h3>
+        
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            { service: 'Supabase Database', status: 'healthy', uptime: '99.9%', responseTime: '45ms' },
+            { service: 'Authentication', status: 'healthy', uptime: '99.8%', responseTime: '120ms' },
+            { service: 'Storage', status: 'healthy', uptime: '99.7%', responseTime: '89ms' },
+            { service: 'Edge Functions', status: 'warning', uptime: '98.5%', responseTime: '234ms' }
+          ].map((service, index) => (
+            <div key={index} className="p-4 border border-gray-200 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium text-gray-900">{service.service}</span>
+                <span className={`w-3 h-3 rounded-full ${
+                  service.status === 'healthy' ? 'bg-emerald-500' :
+                  service.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                }`}></span>
+              </div>
+              <div className="text-sm text-gray-600 space-y-1">
+                <div>Uptime: {service.uptime}</div>
+                <div>Response: {service.responseTime}</div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -1093,98 +826,89 @@ export const SystemSettings: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="mb-8"
         >
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
-              <Settings className="w-6 h-6 text-white" />
-            </div>
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900">Sistem Ayarları</h1>
-              <p className="text-gray-600 mb-4">Bu bölüm yakında eklenecek.</p>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">Sistem Ayarları</h1>
+              <p className="text-gray-600">Platform konfigürasyonu ve Supabase ayarları</p>
+            </div>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={resetToDefaults}
+                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>Varsayılana Sıfırla</span>
+              </button>
+              <button
+                onClick={saveSettings}
+                disabled={isLoading}
+                className="flex items-center space-x-2 bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+              >
+                <Save className="w-5 h-5" />
+                <span>{isLoading ? 'Kaydediliyor...' : 'Ayarları Kaydet'}</span>
+              </button>
             </div>
           </div>
         </motion.div>
 
-        <div className="grid lg:grid-cols-4 gap-8">
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl p-6 shadow-lg sticky top-8">
-              <nav className="space-y-2">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                      activeTab === tab.id
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    <tab.icon className="w-5 h-5" />
-                    <span>{tab.name}</span>
-                  </button>
-                ))}
-              </nav>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="lg:col-span-3">
-            <div className="bg-white rounded-2xl p-8 shadow-lg">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">
-                  {tabs.find(tab => tab.id === activeTab)?.name} Ayarları
-                </h3>
+        {/* Tabs */}
+        <div className="bg-white rounded-2xl shadow-lg mb-8 overflow-hidden">
+          <div className="border-b border-gray-200">
+            <nav className="flex overflow-x-auto">
+              {tabs.map((tab) => (
                 <button
-                  onClick={() => handleSaveSettings(activeTab)}
-                  disabled={isLoading}
-                  className="flex items-center space-x-2 bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center space-x-2 py-4 px-6 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? 'border-emerald-500 text-emerald-600 bg-emerald-50'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
                 >
-                  {isLoading ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  <span>{isLoading ? 'Kaydediliyor...' : 'Kaydet'}</span>
+                  <tab.icon className="w-4 h-4" />
+                  <span>{tab.name}</span>
                 </button>
-              </div>
+              ))}
+            </nav>
+          </div>
+        </div>
 
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                {activeTab === 'general' && renderGeneralSettings()}
-                {activeTab === 'security' && renderSecuritySettings()}
-                {activeTab === 'blockchain' && renderBlockchainSettings()}
-                {activeTab === 'staking' && renderStakingSettings()}
-                {activeTab === 'supabase' && renderSupabaseSettings()}
-                {activeTab === 'stripe' && renderStripeSettings()}
-                
-                {/* Placeholder tabs */}
-                {['trading', 'notifications', 'api'].includes(activeTab) && (
-                  <div className="text-center py-12">
-                    <Settings className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      {tabs.find(t => t.id === activeTab)?.name} Ayarları
-                    </h3>
-                    <p className="text-gray-600">Bu bölüm yakında eklenecek.</p>
-                    {activeTab === 'api' && (
-                      <div className="text-left max-w-md mx-auto mt-6">
-                        <h4 className="font-medium text-gray-900 mb-2">API Endpoint'leri:</h4>
-                        <div className="text-sm text-gray-600 space-y-1">
-                          <p>• <code>/rest/v1/users</code> - Kullanıcı yönetimi</p>
-                          <p>• <code>/rest/v1/projects</code> - Proje yönetimi</p>
-                          <p>• <code>/rest/v1/blog_posts</code> - Blog işlemleri</p>
-                          <p>• <code>/auth/v1/*</code> - Authentication</p>
-                          <p>• <code>/storage/v1/*</code> - Dosya yönetimi</p>
-                          <p>• <code>/functions/v1/*</code> - Edge Functions</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </motion.div>
+        {/* Tab Content */}
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          {activeTab === 'general' && renderGeneralSettings()}
+          {activeTab === 'supabase' && renderSupabaseSettings()}
+          {activeTab === 'security' && renderSecuritySettings()}
+          {activeTab === 'api' && renderAPISettings()}
+          {activeTab === 'maintenance' && renderMaintenanceSettings()}
+          
+          {/* Other tabs placeholder */}
+          {!['general', 'supabase', 'security', 'api', 'maintenance'].includes(activeTab) && (
+            <div className="bg-white rounded-xl p-12 shadow-lg text-center">
+              <Settings className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{tabs.find(t => t.id === activeTab)?.name}</h3>
+              <p className="text-gray-600">Bu bölüm yakında geliştirilecek.</p>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Warning Notice */}
+        <div className="mt-8 bg-amber-50 border border-amber-200 rounded-xl p-6">
+          <div className="flex items-start space-x-3">
+            <AlertTriangle className="w-6 h-6 text-amber-600 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-amber-800 mb-2">Önemli Güvenlik Uyarısı</h4>
+              <ul className="text-amber-700 text-sm space-y-1">
+                <li>• Service Role Key'i asla frontend kodunda kullanmayın</li>
+                <li>• Environment variables'ları production'da güvenli şekilde saklayın</li>
+                <li>• RLS politikalarının tüm tablolarda aktif olduğundan emin olun</li>
+                <li>• Düzenli olarak güvenlik güncellemelerini takip edin</li>
+                <li>• Database backup'larını düzenli olarak kontrol edin</li>
+              </ul>
             </div>
           </div>
         </div>
