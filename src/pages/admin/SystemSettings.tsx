@@ -28,7 +28,12 @@ import {
   Cloud,
   HardDrive,
   Wifi,
-  Monitor
+  Monitor,
+  CreditCard,
+  Wrench,
+  FileText,
+  Upload,
+  Download
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { hasPermission } from '../../utils/permissions';
@@ -59,17 +64,17 @@ export const SystemSettings: React.FC = () => {
     databaseUrl: '', // Database direct connection
     
     // Security Settings
-    jwtExpiry: 3600, // 1 hour
-    refreshTokenExpiry: 2592000, // 30 days
+    jwtExpiry: 3600,
+    refreshTokenExpiry: 2592000,
     maxLoginAttempts: 5,
     passwordMinLength: 8,
     requireEmailVerification: false,
     enableTwoFactor: true,
-    sessionTimeout: 1800, // 30 minutes
+    sessionTimeout: 1800,
     
     // API Settings
-    maxRequestSize: 3, // MB
-    requestTimeout: 30, // seconds
+    maxRequestSize: 3,
+    requestTimeout: 30,
     maxRows: 1000,
     enableCors: true,
     allowedOrigins: ['https://decarbonize.world', 'http://localhost:5173'],
@@ -90,7 +95,7 @@ export const SystemSettings: React.FC = () => {
     
     // Performance Settings
     enableCaching: true,
-    cacheExpiry: 3600, // 1 hour
+    cacheExpiry: 3600,
     enableCompression: true,
     enableCdn: false,
     maxConcurrentConnections: 100,
@@ -123,7 +128,7 @@ export const SystemSettings: React.FC = () => {
     
     // Trading Settings
     enableTrading: true,
-    tradingFee: 0.25, // %
+    tradingFee: 0.25,
     minTradeAmount: 10,
     maxTradeAmount: 100000,
     enableStaking: true,
@@ -132,29 +137,44 @@ export const SystemSettings: React.FC = () => {
     enableBlog: true,
     enableComments: true,
     moderateComments: true,
-    maxFileSize: 10, // MB
+    maxFileSize: 10,
     allowedFileTypes: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
     
     // Maintenance Settings
     maintenanceMode: false,
     maintenanceMessage: 'Platform bakımda. Lütfen daha sonra tekrar deneyin.',
     enableDebugMode: false,
-    logLevel: 'info'
+    logLevel: 'info',
+    
+    // Stripe Settings
+    stripePublishableKey: '',
+    stripeSecretKey: '',
+    stripeWebhookSecret: '',
+    enableStripe: false,
+    stripeCurrency: 'USD',
+    
+    // Platform Settings
+    platformFee: 2.5,
+    enableKyc: true,
+    enableWallet: true,
+    enablePortfolio: true,
+    enableAdvisor: true
   });
 
   const tabs = [
-    { id: 'general', name: 'Genel Ayarlar', icon: Settings },
-    { id: 'supabase', name: 'Supabase Konfigürasyonu', icon: Database },
-    { id: 'security', name: 'Güvenlik', icon: Shield },
-    { id: 'api', name: 'API Ayarları', icon: Globe },
-    { id: 'email', name: 'E-posta', icon: Mail },
-    { id: 'notifications', name: 'Bildirimler', icon: Bell },
-    { id: 'performance', name: 'Performans', icon: Activity },
-    { id: 'backup', name: 'Yedekleme', icon: HardDrive },
-    { id: 'analytics', name: 'Analitik', icon: BarChart3 },
-    { id: 'blockchain', name: 'Blockchain', icon: Zap },
-    { id: 'ico', name: 'ICO Ayarları', icon: Code },
-    { id: 'maintenance', name: 'Bakım', icon: Monitor }
+    { id: 'general', name: 'Genel', icon: Settings, color: 'blue' },
+    { id: 'supabase', name: 'Supabase', icon: Database, color: 'emerald' },
+    { id: 'security', name: 'Güvenlik', icon: Shield, color: 'red' },
+    { id: 'api', name: 'API', icon: Globe, color: 'purple' },
+    { id: 'email', name: 'E-posta', icon: Mail, color: 'blue' },
+    { id: 'notifications', name: 'Bildirimler', icon: Bell, color: 'yellow' },
+    { id: 'performance', name: 'Performans', icon: Activity, color: 'green' },
+    { id: 'backup', name: 'Yedekleme', icon: HardDrive, color: 'gray' },
+    { id: 'analytics', name: 'Analitik', icon: BarChart3, color: 'indigo' },
+    { id: 'blockchain', name: 'Blockchain', icon: Zap, color: 'orange' },
+    { id: 'ico', name: 'ICO', icon: Code, color: 'pink' },
+    { id: 'stripe', name: 'Stripe', icon: CreditCard, color: 'blue' },
+    { id: 'maintenance', name: 'Bakım', icon: Wrench, color: 'red' }
   ];
 
   useEffect(() => {
@@ -164,7 +184,6 @@ export const SystemSettings: React.FC = () => {
   const loadSettings = async () => {
     setIsLoading(true);
     try {
-      // Load settings from Supabase or localStorage
       const savedSettings = localStorage.getItem('system-settings');
       if (savedSettings) {
         setSettings({ ...settings, ...JSON.parse(savedSettings) });
@@ -179,9 +198,8 @@ export const SystemSettings: React.FC = () => {
   const saveSettings = async () => {
     setIsLoading(true);
     try {
-      // Save to localStorage for now (in real app, save to Supabase)
       localStorage.setItem('system-settings', JSON.stringify(settings));
-      toast.success('Ayarlar kaydedildi!');
+      toast.success('Ayarlar başarıyla kaydedildi!');
     } catch (error) {
       toast.error('Ayarlar kaydedilemedi!');
     } finally {
@@ -192,7 +210,6 @@ export const SystemSettings: React.FC = () => {
   const testSupabaseConnection = async () => {
     setConnectionStatus('testing');
     try {
-      // Test Supabase connection
       const response = await fetch(`${settings.supabaseUrl}/rest/v1/`, {
         headers: {
           'apikey': settings.supabaseAnonKey,
@@ -222,13 +239,41 @@ export const SystemSettings: React.FC = () => {
     if (window.confirm('Tüm ayarları varsayılan değerlere sıfırlamak istediğinizden emin misiniz?')) {
       setSettings({
         ...settings,
-        // Reset to default values
         siteName: 'DECARBONIZE.world',
         siteDescription: 'Global CO₂ Token Platform',
         defaultLanguage: 'tr',
         timezone: 'Europe/Istanbul'
       });
       toast.success('Ayarlar varsayılan değerlere sıfırlandı!');
+    }
+  };
+
+  const exportSettings = () => {
+    const dataStr = JSON.stringify(settings, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `system-settings-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success('Ayarlar dışa aktarıldı!');
+  };
+
+  const importSettings = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const importedSettings = JSON.parse(event.target?.result as string);
+          setSettings({ ...settings, ...importedSettings });
+          toast.success('Ayarlar içe aktarıldı!');
+        } catch (error) {
+          toast.error('Geçersiz dosya formatı!');
+        }
+      };
+      reader.readAsText(file);
     }
   };
 
@@ -307,6 +352,30 @@ export const SystemSettings: React.FC = () => {
               <option value="America/New_York">America/New_York (UTC-5)</option>
               <option value="Europe/London">Europe/London (UTC+0)</option>
             </select>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">İletişim Bilgileri</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Admin E-posta</label>
+            <input
+              type="email"
+              value={settings.adminEmail}
+              onChange={(e) => setSettings({...settings, adminEmail: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Destek E-posta</label>
+            <input
+              type="email"
+              value={settings.supportEmail}
+              onChange={(e) => setSettings({...settings, supportEmail: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
           </div>
         </div>
       </div>
@@ -409,8 +478,8 @@ export const SystemSettings: React.FC = () => {
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
               placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Supabase Dashboard &gt; Settings &gt; API &gt; anon public key
+            <p className="text-xs text-emerald-600 mt-1">
+              ✅ Bu anahtar frontend'de güvenle kullanılabilir (RLS ile korunur)
             </p>
           </div>
 
@@ -443,10 +512,10 @@ export const SystemSettings: React.FC = () => {
               <div className="flex items-start space-x-2">
                 <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-red-800">Güvenlik Uyarısı</p>
+                  <p className="text-sm font-medium text-red-800">⚠️ Kritik Güvenlik Uyarısı</p>
                   <p className="text-xs text-red-700 mt-1">
-                    Service Role Key sadece server-side işlemler için kullanılmalıdır. 
-                    Frontend'de asla kullanmayın! Bu anahtar tüm veritabanı erişim yetkisi verir.
+                    Bu anahtar SADECE server-side işlemler için kullanılmalıdır. 
+                    Frontend'de asla kullanmayın! Tüm veritabanı erişim yetkisi verir.
                   </p>
                 </div>
               </div>
@@ -647,6 +716,276 @@ export const SystemSettings: React.FC = () => {
     </div>
   );
 
+  const renderStripeSettings = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-900">Stripe Konfigürasyonu</h3>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.enableStripe}
+              onChange={(e) => setSettings({...settings, enableStripe: e.target.checked})}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Publishable Key</label>
+            <input
+              type={showSecrets ? 'text' : 'password'}
+              value={settings.stripePublishableKey}
+              onChange={(e) => setSettings({...settings, stripePublishableKey: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+              placeholder="pk_test_..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Secret Key</label>
+            <input
+              type={showSecrets ? 'text' : 'password'}
+              value={settings.stripeSecretKey}
+              onChange={(e) => setSettings({...settings, stripeSecretKey: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+              placeholder="sk_test_..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Webhook Secret</label>
+            <input
+              type={showSecrets ? 'text' : 'password'}
+              value={settings.stripeWebhookSecret}
+              onChange={(e) => setSettings({...settings, stripeWebhookSecret: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+              placeholder="whsec_..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Para Birimi</label>
+            <select
+              value={settings.stripeCurrency}
+              onChange={(e) => setSettings({...settings, stripeCurrency: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="USD">USD - US Dollar</option>
+              <option value="EUR">EUR - Euro</option>
+              <option value="TRY">TRY - Turkish Lira</option>
+              <option value="GBP">GBP - British Pound</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start space-x-2">
+            <Info className="w-4 h-4 text-blue-600 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-blue-800">Stripe Entegrasyonu</p>
+              <p className="text-xs text-blue-700 mt-1">
+                ICO token satışları ve ödeme işlemleri için Stripe kullanılır. 
+                Test modunda çalışmak için test anahtarlarını kullanın.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderMaintenanceSettings = () => (
+    <div className="space-y-6">
+      {/* Maintenance Mode */}
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Bakım Modu</h3>
+        
+        <div className="space-y-6">
+          <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div>
+              <h4 className="font-medium text-yellow-900">Bakım Modu Aktif</h4>
+              <p className="text-sm text-yellow-700">Site bakım modunda iken sadece adminler erişebilir</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.maintenanceMode}
+                onChange={(e) => setSettings({...settings, maintenanceMode: e.target.checked})}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
+            </label>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Bakım Mesajı</label>
+            <textarea
+              value={settings.maintenanceMessage}
+              onChange={(e) => setSettings({...settings, maintenanceMessage: e.target.value})}
+              rows={4}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              placeholder="Platform şu anda bakımda. Lütfen daha sonra tekrar deneyin."
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Bu mesaj bakım modu aktifken kullanıcılara gösterilir
+            </p>
+          </div>
+
+          {/* Maintenance Schedule */}
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-3">Planlı Bakım</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-blue-700 mb-2">Başlangıç Tarihi</label>
+                <input
+                  type="datetime-local"
+                  className="w-full p-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-blue-700 mb-2">Bitiş Tarihi</label>
+                <input
+                  type="datetime-local"
+                  className="w-full p-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+            <div className="mt-3">
+              <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                Planlı Bakım Ayarla
+              </button>
+            </div>
+          </div>
+
+          {/* Emergency Maintenance */}
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <h4 className="font-medium text-red-900 mb-3">Acil Bakım</h4>
+            <p className="text-sm text-red-700 mb-3">
+              Kritik sorunlar için anında bakım modu aktif edilebilir
+            </p>
+            <button 
+              onClick={() => {
+                if (window.confirm('Acil bakım modunu aktif etmek istediğinizden emin misiniz?')) {
+                  setSettings({...settings, maintenanceMode: true});
+                  toast.success('Acil bakım modu aktif edildi!');
+                }
+              }}
+              className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Acil Bakım Modu Aktif Et
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* System Health */}
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Sistem Sağlığı</h3>
+        
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          {[
+            { service: 'Supabase Database', status: 'healthy', uptime: '99.9%', responseTime: '45ms', color: 'emerald' },
+            { service: 'Authentication', status: 'healthy', uptime: '99.8%', responseTime: '120ms', color: 'emerald' },
+            { service: 'Storage', status: 'healthy', uptime: '99.7%', responseTime: '89ms', color: 'emerald' },
+            { service: 'Edge Functions', status: 'warning', uptime: '98.5%', responseTime: '234ms', color: 'yellow' }
+          ].map((service, index) => (
+            <div key={index} className="p-4 border border-gray-200 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium text-gray-900">{service.service}</span>
+                <span className={`w-3 h-3 rounded-full ${
+                  service.status === 'healthy' ? 'bg-emerald-500' :
+                  service.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                }`}></span>
+              </div>
+              <div className="text-sm text-gray-600 space-y-1">
+                <div>Uptime: {service.uptime}</div>
+                <div>Response: {service.responseTime}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* System Actions */}
+        <div className="grid grid-cols-3 gap-3">
+          <button className="flex items-center justify-center space-x-2 p-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+            <RefreshCw className="w-4 h-4" />
+            <span>Sistem Yenile</span>
+          </button>
+          <button className="flex items-center justify-center space-x-2 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <Download className="w-4 h-4" />
+            <span>Log İndir</span>
+          </button>
+          <button className="flex items-center justify-center space-x-2 p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+            <Activity className="w-4 h-4" />
+            <span>Performans</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Debug Settings */}
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Debug ve Geliştirici Ayarları</h3>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-gray-900">Debug Modu</h4>
+              <p className="text-sm text-gray-600">Geliştirici araçları ve detaylı loglar</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.enableDebugMode}
+                onChange={(e) => setSettings({...settings, enableDebugMode: e.target.checked})}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Log Seviyesi</label>
+            <select
+              value={settings.logLevel}
+              onChange={(e) => setSettings({...settings, logLevel: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            >
+              <option value="error">Error</option>
+              <option value="warn">Warning</option>
+              <option value="info">Info</option>
+              <option value="debug">Debug</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Session Timeout (dakika)</label>
+              <input
+                type="number"
+                value={settings.sessionTimeout / 60}
+                onChange={(e) => setSettings({...settings, sessionTimeout: parseInt(e.target.value) * 60})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Platform Komisyonu (%)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={settings.platformFee}
+                onChange={(e) => setSettings({...settings, platformFee: parseFloat(e.target.value)})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderAPISettings = () => (
     <div className="space-y-6">
       <div className="bg-white rounded-xl p-6 shadow-lg">
@@ -722,48 +1061,127 @@ export const SystemSettings: React.FC = () => {
     </div>
   );
 
-  const renderMaintenanceSettings = () => (
+  const renderEmailSettings = () => (
     <div className="space-y-6">
       <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Bakım Modu</h3>
+        <h3 className="text-lg font-bold text-gray-900 mb-4">SMTP Konfigürasyonu</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">SMTP Host</label>
+            <input
+              type="text"
+              value={settings.smtpHost}
+              onChange={(e) => setSettings({...settings, smtpHost: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">SMTP Port</label>
+            <input
+              type="number"
+              value={settings.smtpPort}
+              onChange={(e) => setSettings({...settings, smtpPort: parseInt(e.target.value)})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">SMTP Kullanıcı</label>
+            <input
+              type="text"
+              value={settings.smtpUser}
+              onChange={(e) => setSettings({...settings, smtpUser: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">SMTP Şifre</label>
+            <input
+              type={showSecrets ? 'text' : 'password'}
+              value={settings.smtpPassword}
+              onChange={(e) => setSettings({...settings, smtpPassword: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Gönderen Adı</label>
+            <input
+              type="text"
+              value={settings.emailFromName}
+              onChange={(e) => setSettings({...settings, emailFromName: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Gönderen E-posta</label>
+            <input
+              type="email"
+              value={settings.emailFromAddress}
+              onChange={(e) => setSettings({...settings, emailFromAddress: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+            Test E-postası Gönder
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderNotificationSettings = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Bildirim Ayarları</h3>
         
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-yellow-900">Bakım Modu</h4>
-              <p className="text-sm text-yellow-700">Site bakım modunda iken sadece adminler erişebilir</p>
+              <h4 className="font-medium text-gray-900">E-posta Bildirimleri</h4>
+              <p className="text-sm text-gray-600">Sistem e-posta bildirimlerini etkinleştir</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={settings.maintenanceMode}
-                onChange={(e) => setSettings({...settings, maintenanceMode: e.target.checked})}
+                checked={settings.enableEmailNotifications}
+                onChange={(e) => setSettings({...settings, enableEmailNotifications: e.target.checked})}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
             </label>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Bakım Mesajı</label>
-            <textarea
-              value={settings.maintenanceMessage}
-              onChange={(e) => setSettings({...settings, maintenanceMessage: e.target.value})}
-              rows={3}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            />
           </div>
 
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-gray-900">Debug Modu</h4>
-              <p className="text-sm text-gray-600">Geliştirici araçları ve detaylı loglar</p>
+              <h4 className="font-medium text-gray-900">Push Bildirimleri</h4>
+              <p className="text-sm text-gray-600">Browser push bildirimlerini etkinleştir</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={settings.enableDebugMode}
-                onChange={(e) => setSettings({...settings, enableDebugMode: e.target.checked})}
+                checked={settings.enablePushNotifications}
+                onChange={(e) => setSettings({...settings, enablePushNotifications: e.target.checked})}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-gray-900">SMS Bildirimleri</h4>
+              <p className="text-sm text-gray-600">SMS bildirimlerini etkinleştir</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.enableSmsNotifications}
+                onChange={(e) => setSettings({...settings, enableSmsNotifications: e.target.checked})}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
@@ -771,46 +1189,357 @@ export const SystemSettings: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Log Seviyesi</label>
-            <select
-              value={settings.logLevel}
-              onChange={(e) => setSettings({...settings, logLevel: e.target.value})}
+            <label className="block text-sm font-medium text-gray-700 mb-2">Bildirim Saklama Süresi (gün)</label>
+            <input
+              type="number"
+              value={settings.notificationRetentionDays}
+              onChange={(e) => setSettings({...settings, notificationRetentionDays: parseInt(e.target.value)})}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            >
-              <option value="error">Error</option>
-              <option value="warn">Warning</option>
-              <option value="info">Info</option>
-              <option value="debug">Debug</option>
-            </select>
+            />
           </div>
         </div>
       </div>
+    </div>
+  );
 
-      {/* System Health */}
+  const renderPerformanceSettings = () => (
+    <div className="space-y-6">
       <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Sistem Sağlığı</h3>
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Performans Optimizasyonu</h3>
         
-        <div className="grid grid-cols-2 gap-4">
-          {[
-            { service: 'Supabase Database', status: 'healthy', uptime: '99.9%', responseTime: '45ms' },
-            { service: 'Authentication', status: 'healthy', uptime: '99.8%', responseTime: '120ms' },
-            { service: 'Storage', status: 'healthy', uptime: '99.7%', responseTime: '89ms' },
-            { service: 'Edge Functions', status: 'warning', uptime: '98.5%', responseTime: '234ms' }
-          ].map((service, index) => (
-            <div key={index} className="p-4 border border-gray-200 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium text-gray-900">{service.service}</span>
-                <span className={`w-3 h-3 rounded-full ${
-                  service.status === 'healthy' ? 'bg-emerald-500' :
-                  service.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
-                }`}></span>
-              </div>
-              <div className="text-sm text-gray-600 space-y-1">
-                <div>Uptime: {service.uptime}</div>
-                <div>Response: {service.responseTime}</div>
-              </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-gray-900">Cache Etkinleştir</h4>
+              <p className="text-sm text-gray-600">Sayfa ve API yanıtlarını cache'le</p>
             </div>
-          ))}
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.enableCaching}
+                onChange={(e) => setSettings({...settings, enableCaching: e.target.checked})}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-gray-900">Gzip Sıkıştırma</h4>
+              <p className="text-sm text-gray-600">HTTP yanıtlarını sıkıştır</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.enableCompression}
+                onChange={(e) => setSettings({...settings, enableCompression: e.target.checked})}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-gray-900">CDN Kullan</h4>
+              <p className="text-sm text-gray-600">Static dosyalar için CDN</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.enableCdn}
+                onChange={(e) => setSettings({...settings, enableCdn: e.target.checked})}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Cache Süresi (saniye)</label>
+            <input
+              type="number"
+              value={settings.cacheExpiry}
+              onChange={(e) => setSettings({...settings, cacheExpiry: parseInt(e.target.value)})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderBackupSettings = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Yedekleme Ayarları</h3>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-gray-900">Otomatik Yedekleme</h4>
+              <p className="text-sm text-gray-600">Düzenli otomatik yedekleme</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.enableAutoBackup}
+                onChange={(e) => setSettings({...settings, enableAutoBackup: e.target.checked})}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Yedekleme Sıklığı</label>
+              <select
+                value={settings.backupFrequency}
+                onChange={(e) => setSettings({...settings, backupFrequency: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              >
+                <option value="hourly">Saatlik</option>
+                <option value="daily">Günlük</option>
+                <option value="weekly">Haftalık</option>
+                <option value="monthly">Aylık</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Saklama Süresi (gün)</label>
+              <input
+                type="number"
+                value={settings.backupRetentionDays}
+                onChange={(e) => setSettings({...settings, backupRetentionDays: parseInt(e.target.value)})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Yedekleme Konumu</label>
+            <select
+              value={settings.backupLocation}
+              onChange={(e) => setSettings({...settings, backupLocation: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            >
+              <option value="supabase">Supabase (Otomatik)</option>
+              <option value="aws">AWS S3</option>
+              <option value="google">Google Cloud Storage</option>
+              <option value="local">Yerel Sunucu</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <button className="flex items-center justify-center space-x-2 bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors">
+            <Download className="w-4 h-4" />
+            <span>Manuel Yedek Al</span>
+          </button>
+          <button className="flex items-center justify-center space-x-2 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+            <Upload className="w-4 h-4" />
+            <span>Yedek Geri Yükle</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderAnalyticsSettings = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Analitik Ayarları</h3>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-gray-900">Analitik Etkinleştir</h4>
+              <p className="text-sm text-gray-600">Kullanıcı davranışı ve site performansı takibi</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.enableAnalytics}
+                onChange={(e) => setSettings({...settings, enableAnalytics: e.target.checked})}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Google Analytics ID</label>
+              <input
+                type="text"
+                value={settings.googleAnalyticsId}
+                onChange={(e) => setSettings({...settings, googleAnalyticsId: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                placeholder="G-XXXXXXXXXX"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Hotjar ID</label>
+              <input
+                type="text"
+                value={settings.hotjarId}
+                onChange={(e) => setSettings({...settings, hotjarId: e.target.value})}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                placeholder="1234567"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-gray-900">Hata Takibi</h4>
+              <p className="text-sm text-gray-600">Otomatik hata raporlama ve takip</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.enableErrorTracking}
+                onChange={(e) => setSettings({...settings, enableErrorTracking: e.target.checked})}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderBlockchainSettings = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">ReefChain Ayarları</h3>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">ReefChain RPC URL</label>
+            <input
+              type="url"
+              value={settings.reefChainRpc}
+              onChange={(e) => setSettings({...settings, reefChainRpc: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Block Explorer URL</label>
+            <input
+              type="url"
+              value={settings.reefChainExplorer}
+              onChange={(e) => setSettings({...settings, reefChainExplorer: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">WalletConnect Project ID</label>
+            <input
+              type="text"
+              value={settings.walletConnectProjectId}
+              onChange={(e) => setSettings({...settings, walletConnectProjectId: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-gray-900">WalletConnect Etkinleştir</h4>
+              <p className="text-sm text-gray-600">Mobil cüzdan bağlantıları için</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.enableWalletConnect}
+                onChange={(e) => setSettings({...settings, enableWalletConnect: e.target.checked})}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderICOSettings = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl p-6 shadow-lg">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-900">ICO Konfigürasyonu</h3>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.enableIco}
+              onChange={(e) => setSettings({...settings, enableIco: e.target.checked})}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+          </label>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">ICO Başlangıç Tarihi</label>
+            <input
+              type="date"
+              value={settings.icoStartDate}
+              onChange={(e) => setSettings({...settings, icoStartDate: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">ICO Bitiş Tarihi</label>
+            <input
+              type="date"
+              value={settings.icoEndDate}
+              onChange={(e) => setSettings({...settings, icoEndDate: e.target.value})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Token Fiyatı ($)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={settings.tokenPrice}
+              onChange={(e) => setSettings({...settings, tokenPrice: parseFloat(e.target.value)})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Platform Komisyonu (%)</label>
+            <input
+              type="number"
+              step="0.1"
+              value={settings.platformFee}
+              onChange={(e) => setSettings({...settings, platformFee: parseFloat(e.target.value)})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Yatırım ($)</label>
+            <input
+              type="number"
+              value={settings.minInvestment}
+              onChange={(e) => setSettings({...settings, minInvestment: parseInt(e.target.value)})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Maksimum Yatırım ($)</label>
+            <input
+              type="number"
+              value={settings.maxInvestment}
+              onChange={(e) => setSettings({...settings, maxInvestment: parseInt(e.target.value)})}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -829,7 +1558,7 @@ export const SystemSettings: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 mb-2">Sistem Ayarları</h1>
-              <p className="text-gray-600">Platform konfigürasyonu ve Supabase ayarları</p>
+              <p className="text-gray-600">Platform konfigürasyonu ve Supabase entegrasyonu</p>
             </div>
             <div className="flex items-center space-x-3">
               <button
@@ -837,15 +1566,35 @@ export const SystemSettings: React.FC = () => {
                 className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />
-                <span>Varsayılana Sıfırla</span>
+                <span>Sıfırla</span>
               </button>
+              
+              <label className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
+                <Upload className="w-4 h-4" />
+                <span>İçe Aktar</span>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={importSettings}
+                  className="hidden"
+                />
+              </label>
+              
+              <button
+                onClick={exportSettings}
+                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                <span>Dışa Aktar</span>
+              </button>
+              
               <button
                 onClick={saveSettings}
                 disabled={isLoading}
                 className="flex items-center space-x-2 bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
               >
                 <Save className="w-5 h-5" />
-                <span>{isLoading ? 'Kaydediliyor...' : 'Ayarları Kaydet'}</span>
+                <span>{isLoading ? 'Kaydediliyor...' : 'Kaydet'}</span>
               </button>
             </div>
           </div>
@@ -861,7 +1610,7 @@ export const SystemSettings: React.FC = () => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center space-x-2 py-4 px-6 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
                     activeTab === tab.id
-                      ? 'border-emerald-500 text-emerald-600 bg-emerald-50'
+                      ? `border-${tab.color}-500 text-${tab.color}-600 bg-${tab.color}-50`
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
@@ -884,30 +1633,31 @@ export const SystemSettings: React.FC = () => {
           {activeTab === 'supabase' && renderSupabaseSettings()}
           {activeTab === 'security' && renderSecuritySettings()}
           {activeTab === 'api' && renderAPISettings()}
+          {activeTab === 'email' && renderEmailSettings()}
+          {activeTab === 'notifications' && renderNotificationSettings()}
+          {activeTab === 'performance' && renderPerformanceSettings()}
+          {activeTab === 'backup' && renderBackupSettings()}
+          {activeTab === 'analytics' && renderAnalyticsSettings()}
+          {activeTab === 'blockchain' && renderBlockchainSettings()}
+          {activeTab === 'ico' && renderICOSettings()}
+          {activeTab === 'stripe' && renderStripeSettings()}
           {activeTab === 'maintenance' && renderMaintenanceSettings()}
-          
-          {/* Other tabs placeholder */}
-          {!['general', 'supabase', 'security', 'api', 'maintenance'].includes(activeTab) && (
-            <div className="bg-white rounded-xl p-12 shadow-lg text-center">
-              <Settings className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-gray-900 mb-2">{tabs.find(t => t.id === activeTab)?.name}</h3>
-              <p className="text-gray-600">Bu bölüm yakında geliştirilecek.</p>
-            </div>
-          )}
         </motion.div>
 
-        {/* Warning Notice */}
+        {/* Security Warning */}
         <div className="mt-8 bg-amber-50 border border-amber-200 rounded-xl p-6">
           <div className="flex items-start space-x-3">
             <AlertTriangle className="w-6 h-6 text-amber-600 mt-0.5" />
             <div>
-              <h4 className="font-medium text-amber-800 mb-2">Önemli Güvenlik Uyarısı</h4>
+              <h4 className="font-medium text-amber-800 mb-2">Önemli Güvenlik Uyarıları</h4>
               <ul className="text-amber-700 text-sm space-y-1">
                 <li>• Service Role Key'i asla frontend kodunda kullanmayın</li>
                 <li>• Environment variables'ları production'da güvenli şekilde saklayın</li>
                 <li>• RLS politikalarının tüm tablolarda aktif olduğundan emin olun</li>
                 <li>• Düzenli olarak güvenlik güncellemelerini takip edin</li>
                 <li>• Database backup'larını düzenli olarak kontrol edin</li>
+                <li>• API rate limiting'i production'da mutlaka aktif edin</li>
+                <li>• HTTPS kullanımını zorunlu kılın</li>
               </ul>
             </div>
           </div>
