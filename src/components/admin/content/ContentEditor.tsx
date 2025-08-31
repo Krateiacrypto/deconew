@@ -16,8 +16,7 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  Quote,
-  AlertTriangle
+  Quote
 } from 'lucide-react';
 
 interface ContentEditorProps {

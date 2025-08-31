@@ -1,287 +1,265 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
+  Users, 
   MessageCircle, 
-  Video, 
-  Phone, 
-  Star,
+  FileText, 
+  TrendingUp,
   Calendar,
   Clock,
+  Target,
   Award,
-  Globe,
-  TrendingUp,
-  FileText,
-  Users,
-  DollarSign,
   BarChart3,
-  CheckCircle
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
-import { AdvisorChat } from '../../components/advisor/AdvisorChat';
-import { VideoCall } from '../../components/advisor/VideoCall';
-import toast from 'react-hot-toast';
+import { useAuthStore } from '../../store/authStore';
+import { useDataStore } from '../../store/dataStore';
 
 export const AdvisorDashboard: React.FC = () => {
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
-  const [callType, setCallType] = useState<'video' | 'audio'>('video');
+  const { user } = useAuthStore();
+  const [assignedUsers, setAssignedUsers] = useState([]);
+  const [consultations, setConsultations] = useState([]);
+  const [reports, setReports] = useState([]);
 
-  const advisorStats = {
-    totalClients: 127,
-    activeProjects: 23,
-    monthlyEarnings: 15420,
-    successRate: 94,
-    avgRating: 4.9,
-    responseTime: '< 2 hours'
-  };
-
-  const recentClients = [
+  const stats = [
     {
-      id: '1',
-      name: 'Ahmet Yılmaz',
-      avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg',
-      lastContact: '2024-01-20',
-      status: 'active',
-      project: 'Amazon Orman Projesi'
+      title: 'Atanan Kullanıcılar',
+      value: user?.assignedUsers?.length || 0,
+      icon: Users,
+      color: 'blue',
+      change: '+3 bu ay'
     },
     {
-      id: '2',
-      name: 'Elif Kaya',
-      avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg',
-      lastContact: '2024-01-19',
-      status: 'pending',
-      project: 'Rüzgar Enerjisi Yatırımı'
+      title: 'Aktif Danışmanlık',
+      value: 12,
+      icon: MessageCircle,
+      color: 'emerald',
+      change: '+2 bu hafta'
     },
     {
-      id: '3',
-      name: 'Mehmet Demir',
-      avatar: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg',
-      lastContact: '2024-01-18',
-      status: 'completed',
-      project: 'Güneş Paneli Projesi'
+      title: 'Hazırlanan Rapor',
+      value: 8,
+      icon: FileText,
+      color: 'purple',
+      change: '+1 bu hafta'
+    },
+    {
+      title: 'Müşteri Memnuniyeti',
+      value: '4.9/5',
+      icon: Award,
+      color: 'yellow',
+      change: '+0.1 bu ay'
     }
   ];
 
   const upcomingMeetings = [
     {
       id: '1',
-      clientName: 'Ahmet Yılmaz',
+      clientName: 'John Doe',
+      type: 'video',
       date: '2024-01-25',
       time: '14:00',
-      type: 'video',
-      topic: 'Aylık Portföy Değerlendirmesi'
+      topic: 'Portföy Değerlendirmesi',
+      status: 'confirmed'
     },
     {
       id: '2',
-      clientName: 'Elif Kaya',
-      date: '2024-01-30',
-      time: '10:30',
+      clientName: 'Jane Smith',
       type: 'call',
-      topic: 'Yeni Yatırım Fırsatları'
+      date: '2024-01-25',
+      time: '16:30',
+      topic: 'Yatırım Stratejisi',
+      status: 'pending'
     }
   ];
 
-  const handleStartChat = (clientId: string) => {
-    setIsChatOpen(true);
-    toast.success('Chat başlatıldı!');
-  };
+  const recentReports = [
+    {
+      id: '1',
+      title: 'Amazon Orman Projesi Risk Analizi',
+      client: 'John Doe',
+      date: '2024-01-20',
+      status: 'completed',
+      type: 'risk_analysis'
+    },
+    {
+      id: '2',
+      title: 'Portföy Çeşitlendirme Önerisi',
+      client: 'Jane Smith',
+      date: '2024-01-18',
+      status: 'draft',
+      type: 'portfolio_advice'
+    }
+  ];
 
-  const handleVideoCall = () => {
-    setCallType('video');
-    setIsVideoCallOpen(true);
-    toast.success('Video görüşme başlatılıyor...');
-  };
-
-  const handleVoiceCall = () => {
-    setCallType('audio');
-    setIsVideoCallOpen(true);
-    toast.success('Sesli arama başlatılıyor...');
-  };
+  const quickActions = [
+    {
+      title: 'Yeni Rapor Oluştur',
+      description: 'Müşteri için danışmanlık raporu hazırla',
+      icon: FileText,
+      color: 'emerald',
+      action: () => console.log('Create report')
+    },
+    {
+      title: 'Müşteri Mesajları',
+      description: 'Bekleyen müşteri mesajlarını görüntüle',
+      icon: MessageCircle,
+      color: 'blue',
+      action: () => console.log('View messages')
+    },
+    {
+      title: 'Randevu Planla',
+      description: 'Yeni müşteri randevusu oluştur',
+      icon: Calendar,
+      color: 'purple',
+      action: () => console.log('Schedule meeting')
+    },
+    {
+      title: 'Blog Yazısı Yaz',
+      description: 'Uzmanlık alanında blog yazısı oluştur',
+      icon: BarChart3,
+      color: 'orange',
+      action: () => console.log('Write blog')
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Danışman Dashboard</h1>
-            <p className="text-gray-600">Müşterilerinizi yönetin ve performansınızı takip edin</p>
-          </motion.div>
-        </div>
-
-        {/* Stats Grid */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+          transition={{ duration: 0.6 }}
+          className="mb-8"
         >
-          <div className="bg-white rounded-2xl p-6 shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm">Toplam Müşteri</p>
-                <p className="text-2xl font-bold text-gray-900">{advisorStats.totalClients}</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Danışman Dashboard
+          </h1>
+          <p className="text-gray-600">
+            Hoş geldiniz, {user?.name} - Müşterilerinizi yönetin ve danışmanlık hizmetlerinizi takip edin
+          </p>
+        </motion.div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat, index) => (
+            <motion.div
+              key={stat.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
+              className="bg-white rounded-2xl p-6 shadow-lg"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className={`w-12 h-12 bg-${stat.color}-100 rounded-xl flex items-center justify-center`}>
+                  <stat.icon className={`w-6 h-6 text-${stat.color}-600`} />
+                </div>
+                <span className="text-sm text-emerald-600 font-medium">{stat.change}</span>
               </div>
-              <Users className="w-8 h-8 text-emerald-600" />
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-2xl p-6 shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm">Aktif Projeler</p>
-                <p className="text-2xl font-bold text-gray-900">{advisorStats.activeProjects}</p>
-              </div>
-              <BarChart3 className="w-8 h-8 text-blue-600" />
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-2xl p-6 shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm">Aylık Kazanç</p>
-                <p className="text-2xl font-bold text-gray-900">${advisorStats.monthlyEarnings.toLocaleString()}</p>
-              </div>
-              <DollarSign className="w-8 h-8 text-green-600" />
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-2xl p-6 shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm">Başarı Oranı</p>
-                <p className="text-2xl font-bold text-gray-900">%{advisorStats.successRate}</p>
-              </div>
-              <TrendingUp className="w-8 h-8 text-purple-600" />
-            </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
+              <p className="text-gray-600 text-sm">{stat.title}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="bg-white rounded-2xl p-6 shadow-lg mb-8"
+        >
+          <h3 className="text-xl font-bold text-gray-900 mb-6">Hızlı İşlemler</h3>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {quickActions.map((action, index) => (
+              <button
+                key={action.title}
+                onClick={action.action}
+                className="group p-6 rounded-xl border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 transition-all duration-300 text-left"
+              >
+                <div className={`w-12 h-12 bg-${action.color}-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                  <action.icon className={`w-6 h-6 text-${action.color}-600`} />
+                </div>
+                <h4 className="text-lg font-bold text-gray-900 mb-2">{action.title}</h4>
+                <p className="text-gray-600 text-sm">{action.description}</p>
+              </button>
+            ))}
           </div>
         </motion.div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Recent Clients */}
+        {/* Main Content Grid */}
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Upcoming Meetings */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="lg:col-span-2"
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="bg-white rounded-2xl p-6 shadow-lg"
           >
-            <div className="bg-white rounded-2xl p-6 shadow-lg">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Son Müşteriler</h3>
-              <div className="space-y-4">
-                {recentClients.map((client) => (
-                  <div key={client.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center space-x-4">
-                      <img
-                        src={client.avatar}
-                        alt={client.name}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                      <div>
-                        <p className="font-medium text-gray-900">{client.name}</p>
-                        <p className="text-sm text-gray-600">{client.project}</p>
-                        <p className="text-xs text-gray-500">Son iletişim: {client.lastContact}</p>
-                      </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-6">Yaklaşan Randevular</h3>
+            <div className="space-y-4">
+              {upcomingMeetings.map((meeting) => (
+                <div key={meeting.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      meeting.type === 'video' ? 'bg-blue-100' : 'bg-emerald-100'
+                    }`}>
+                      {meeting.type === 'video' ? '📹' : '📞'}
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        client.status === 'active' ? 'bg-green-100 text-green-800' :
-                        client.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {client.status === 'active' ? 'Aktif' :
-                         client.status === 'pending' ? 'Beklemede' : 'Tamamlandı'}
-                      </span>
-                      <button 
-                        onClick={() => handleStartChat(client.id)}
-                        className="text-emerald-600 hover:text-emerald-700"
-                      >
-                        <MessageCircle className="w-5 h-5" />
-                      </button>
+                    <div>
+                      <p className="font-medium text-gray-900">{meeting.clientName}</p>
+                      <p className="text-sm text-gray-600">{meeting.topic}</p>
+                      <p className="text-xs text-gray-500">{meeting.date} - {meeting.time}</p>
                     </div>
                   </div>
-                ))}
-              </div>
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      meeting.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {meeting.status === 'confirmed' ? 'Onaylandı' : 'Bekliyor'}
+                    </span>
+                    <button className="text-emerald-600 hover:text-emerald-700 font-medium text-sm">
+                      Katıl
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </motion.div>
 
-          {/* Upcoming Meetings */}
+          {/* Recent Reports */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="lg:col-span-1"
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="bg-white rounded-2xl p-6 shadow-lg"
           >
-            <div className="bg-white rounded-2xl p-6 shadow-lg mb-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Yaklaşan Görüşmeler</h3>
-              <div className="space-y-4">
-                {upcomingMeetings.map((meeting) => (
-                  <div key={meeting.id} className="p-4 border border-gray-200 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="font-medium text-gray-900">{meeting.clientName}</p>
-                      {meeting.type === 'video' ? (
-                        <Video className="w-4 h-4 text-blue-600" />
-                      ) : (
-                        <Phone className="w-4 h-4 text-emerald-600" />
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">{meeting.topic}</p>
-                    <div className="flex items-center space-x-2 text-xs text-gray-500">
-                      <Calendar className="w-3 h-3" />
-                      <span>{meeting.date}</span>
-                      <Clock className="w-3 h-3" />
-                      <span>{meeting.time}</span>
-                    </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-6">Son Raporlarım</h3>
+            <div className="space-y-4">
+              {recentReports.map((report) => (
+                <div key={report.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <h4 className="font-medium text-gray-900">{report.title}</h4>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      report.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {report.status === 'completed' ? 'Tamamlandı' : 'Taslak'}
+                    </span>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Performance Summary */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg">
-              <h4 className="text-lg font-bold text-gray-900 mb-4">Performans Özeti</h4>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Ortalama Puan</span>
-                  <div className="flex items-center space-x-1">
-                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                    <span className="font-medium">{advisorStats.avgRating}</span>
+                  <p className="text-sm text-gray-600 mb-2">Müşteri: {report.client}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">{report.date}</span>
+                    <button className="text-emerald-600 hover:text-emerald-700 font-medium text-sm">
+                      Görüntüle
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Yanıt Süresi</span>
-                  <span className="font-medium text-emerald-600">{advisorStats.responseTime}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Başarı Oranı</span>
-                  <span className="font-medium text-emerald-600">%{advisorStats.successRate}</span>
-                </div>
-              </div>
+              ))}
             </div>
           </motion.div>
         </div>
-
-        {/* Chat Component */}
-        <AdvisorChat
-          advisorId="current-advisor"
-          advisorName="Danışman"
-          advisorAvatar="https://images.pexels.com/photos/3756679/pexels-photo-3756679.jpeg"
-          isOpen={isChatOpen}
-          onClose={() => setIsChatOpen(false)}
-          onVideoCall={handleVideoCall}
-          onVoiceCall={handleVoiceCall}
-        />
-
-        {/* Video Call Component */}
-        <VideoCall
-          advisorName="Danışman"
-          advisorAvatar="https://images.pexels.com/photos/3756679/pexels-photo-3756679.jpeg"
-          isOpen={isVideoCallOpen}
-          onClose={() => setIsVideoCallOpen(false)}
-          callType={callType}
-        />
       </div>
     </div>
   );
