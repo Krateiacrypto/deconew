@@ -36,7 +36,6 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { useDataStore } from '../../store/dataStore';
 import { hasPermission, getRoleDisplayName, getRoleColor, canManageUser } from '../../utils/permissions';
-import { Star, Leaf, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const UserProfiles: React.FC = () => {
