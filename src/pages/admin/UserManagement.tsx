@@ -27,6 +27,7 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { useDataStore } from '../../store/dataStore';
 import { hasPermission, getRoleDisplayName, getRoleColor } from '../../utils/permissions';
+import { User as UserType } from '../../types';
 import toast from 'react-hot-toast';
 
 export const UserManagement: React.FC = () => {
@@ -36,7 +37,7 @@ export const UserManagement: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState('all');
   const [kycFilter, setKycFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
@@ -97,7 +98,7 @@ export const UserManagement: React.FC = () => {
     }
   };
 
-  const canManageUser = (targetUser: any) => {
+  const canManageUser = (targetUser: UserType) => {
     if (user?.role === 'superadmin') return true;
     if (user?.role === 'admin') {
       return !['superadmin', 'admin'].includes(targetUser.role);

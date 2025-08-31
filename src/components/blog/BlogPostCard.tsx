@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { BlogPost } from '../../types/blog';
 import { useBlogStore } from '../../store/blogStore';
+import toast from 'react-hot-toast';
 
 interface BlogPostCardProps {
   post: BlogPost;

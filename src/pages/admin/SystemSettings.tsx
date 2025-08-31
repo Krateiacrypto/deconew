@@ -21,6 +21,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
 export const SystemSettings: React.FC = () => {
@@ -94,8 +95,8 @@ export const SystemSettings: React.FC = () => {
       twilioToken: '••••••••••••••••'
     },
     supabase: {
-      projectUrl: 'https://your-project.supabase.co',
-      anonKey: '••••••••••••••••••••••••••••••••',
+      projectUrl: import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co',
+      anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '••••••••••••••••••••••••••••••••',
       serviceRoleKey: '••••••••••••••••••••••••••••••••',
       databaseUrl: 'postgresql://••••••••••••••••',
       jwtSecret: '••••••••••••••••••••••••••••••••'
@@ -135,6 +136,30 @@ export const SystemSettings: React.FC = () => {
       ...prev,
       [field]: !prev[field]
     }));
+  };
+
+  // Test Supabase connection
+  const testSupabaseConnection = async (testType: 'database' | 'auth' | 'storage') => {
+    try {
+      switch (testType) {
+        case 'database':
+          const { data, error } = await supabase.from('users').select('count').limit(1);
+          if (error) throw error;
+          toast.success('Database bağlantısı başarılı!');
+          break;
+        case 'auth':
+          const { data: sessionData } = await supabase.auth.getSession();
+          toast.success('Auth servisi çalışıyor!');
+          break;
+        case 'storage':
+          const { data: buckets, error: storageError } = await supabase.storage.listBuckets();
+          if (storageError) throw storageError;
+          toast.success('Storage servisi çalışıyor!');
+          break;
+      }
+    } catch (error: any) {
+      toast.error(`${testType} bağlantı hatası: ${handleSupabaseError(error)}`);
+    }
   };
 
   const tabs = [
@@ -306,7 +331,7 @@ export const SystemSettings: React.FC = () => {
               checked={settings.general.kycRequired}
               onChange={(e) => setSettings({
                 ...settings,
-                general: { ...settings.general, kycRequired: e.target.value }
+                general: { ...settings.general, kycRequired: e.target.checked }
               })}
               className="sr-only peer"
             />
@@ -829,31 +854,22 @@ export const SystemSettings: React.FC = () => {
         <h4 className="font-medium text-gray-900 mb-3">Bağlantı Testi</h4>
         <div className="grid grid-cols-2 gap-3">
           <button
-            onClick={async () => {
-              try {
-                const { data, error } = await supabase.from('users').select('count').single();
-                if (error) throw error;
-                toast.success('Supabase bağlantısı başarılı!');
-              } catch (error) {
-                toast.error('Supabase bağlantı hatası!');
-              }
-            }}
+            onClick={() => testSupabaseConnection('database')}
             className="px-3 py-2 bg-emerald-600 text-white rounded text-sm hover:bg-emerald-700"
           >
             Database Test
           </button>
           <button
-            onClick={async () => {
-              try {
-                const { data } = await supabase.auth.getSession();
-                toast.success('Auth servisi çalışıyor!');
-              } catch (error) {
-                toast.error('Auth servis hatası!');
-              }
-            }}
+            onClick={() => testSupabaseConnection('auth')}
             className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
           >
             Auth Test
+          </button>
+          <button
+            onClick={() => testSupabaseConnection('storage')}
+            className="px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700"
+          >
+            Storage Test
           </button>
         </div>
       </div>
@@ -1084,18 +1100,6 @@ export const SystemSettings: React.FC = () => {
             <div>
               <h1 className="text-4xl font-bold text-gray-900">Sistem Ayarları</h1>
               <p className="text-gray-600 mb-4">Bu bölüm yakında eklenecek.</p>
-              {activeTab === 'api' && (
-                <div className="text-left max-w-md mx-auto">
-                  <h4 className="font-medium text-gray-900 mb-2">API Endpoint'leri:</h4>
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <p>• <code>/api/auth/*</code> - Authentication</p>
-                    <p>• <code>/api/projects/*</code> - Proje yönetimi</p>
-                    <p>• <code>/api/blog/*</code> - Blog işlemleri</p>
-                    <p>• <code>/api/users/*</code> - Kullanıcı yönetimi</p>
-                    <p>• <code>/api/stripe/*</code> - Ödeme webhook'ları</p>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </motion.div>
@@ -1165,6 +1169,19 @@ export const SystemSettings: React.FC = () => {
                       {tabs.find(t => t.id === activeTab)?.name} Ayarları
                     </h3>
                     <p className="text-gray-600">Bu bölüm yakında eklenecek.</p>
+                    {activeTab === 'api' && (
+                      <div className="text-left max-w-md mx-auto mt-6">
+                        <h4 className="font-medium text-gray-900 mb-2">API Endpoint'leri:</h4>
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <p>• <code>/rest/v1/users</code> - Kullanıcı yönetimi</p>
+                          <p>• <code>/rest/v1/projects</code> - Proje yönetimi</p>
+                          <p>• <code>/rest/v1/blog_posts</code> - Blog işlemleri</p>
+                          <p>• <code>/auth/v1/*</code> - Authentication</p>
+                          <p>• <code>/storage/v1/*</code> - Dosya yönetimi</p>
+                          <p>• <code>/functions/v1/*</code> - Edge Functions</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </motion.div>

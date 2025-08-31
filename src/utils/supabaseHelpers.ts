@@ -1,8 +1,9 @@
 import { supabase } from '../lib/supabase';
 import { User } from '../types';
+import { Database } from '../types/supabase';
 
 // Type conversion helpers
-export const convertSupabaseUser = (supabaseUser: any): User => {
+export const convertSupabaseUser = (supabaseUser: Database['public']['Tables']['users']['Row']): User => {
   return {
     id: supabaseUser.id,
     email: supabaseUser.email,
@@ -28,7 +29,7 @@ export const convertSupabaseUser = (supabaseUser: any): User => {
   };
 };
 
-export const convertSupabaseProject = (supabaseProject: any) => {
+export const convertSupabaseProject = (supabaseProject: Database['public']['Tables']['projects']['Row']) => {
   return {
     id: supabaseProject.id,
     title: supabaseProject.title,
@@ -58,7 +59,7 @@ export const convertSupabaseProject = (supabaseProject: any) => {
   };
 };
 
-export const convertSupabaseBlogPost = (supabasePost: any) => {
+export const convertSupabaseBlogPost = (supabasePost: Database['public']['Tables']['blog_posts']['Row']) => {
   return {
     id: supabasePost.id,
     title: supabasePost.title,
@@ -84,7 +85,7 @@ export const convertSupabaseBlogPost = (supabasePost: any) => {
 };
 
 // Error handling helpers
-export const handleSupabaseError = (error: any) => {
+export const handleSupabaseError = (error: any): string => {
   console.error('Supabase Error:', error);
   
   if (error.code === 'PGRST116') {
@@ -152,7 +153,7 @@ export const uploadFile = async (
   return data;
 };
 
-export const getPublicUrl = (bucket: string, path: string) => {
+export const getPublicUrl = (bucket: string, path: string): string => {
   const { data } = supabase.storage
     .from(bucket)
     .getPublicUrl(path);
@@ -161,13 +162,13 @@ export const getPublicUrl = (bucket: string, path: string) => {
 };
 
 // Auth helpers
-export const getCurrentUser = async () => {
+export const getCurrentUser = async (): Promise<any> => {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error) throw error;
   return user;
 };
 
-export const getCurrentUserProfile = async () => {
+export const getCurrentUserProfile = async (): Promise<User | null> => {
   const user = await getCurrentUser();
   if (!user) return null;
 
@@ -182,13 +183,13 @@ export const getCurrentUserProfile = async () => {
 };
 
 // Database helpers
-export const executeRPC = async (functionName: string, params?: any) => {
+export const executeRPC = async (functionName: string, params?: any): Promise<any> => {
   const { data, error } = await supabase.rpc(functionName, params);
   if (error) throw error;
   return data;
 };
 
-export const batchInsert = async (table: string, records: any[]) => {
+export const batchInsert = async (table: string, records: any[]): Promise<any> => {
   const { data, error } = await supabase
     .from(table)
     .insert(records)
@@ -202,7 +203,7 @@ export const batchUpdate = async (
   table: string, 
   updates: any, 
   condition: { column: string; value: any }
-) => {
+): Promise<any> => {
   const { data, error } = await supabase
     .from(table)
     .update(updates)

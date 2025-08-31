@@ -1,9 +1,11 @@
 import { supabase } from '../lib/supabase';
 import { User, Project, BlogPost } from '../types';
+import { Database } from '../types/supabase';
+import { convertSupabaseUser, convertSupabaseProject, convertSupabaseBlogPost, handleSupabaseError } from '../utils/supabaseHelpers';
 
 // Auth Services
 export const authService = {
-  async signUp(email: string, password: string, userData: Partial<User>) {
+  async signUp(email: string, password: string, userData: Partial<User>): Promise<any> {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -15,7 +17,7 @@ export const authService = {
       }
     });
 
-    if (error) throw error;
+    if (error) throw new Error(handleSupabaseError(error));
 
     // Create user profile
     if (data.user) {
@@ -33,19 +35,19 @@ export const authService = {
           two_factor_enabled: false
         });
 
-      if (profileError) throw profileError;
+      if (profileError) throw new Error(handleSupabaseError(profileError));
     }
 
     return data;
   },
 
-  async signIn(email: string, password: string) {
+  async signIn(email: string, password: string): Promise<any> {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
 
-    if (error) throw error;
+    if (error) throw new Error(handleSupabaseError(error));
 
     // Update last login
     if (data.user) {
@@ -58,38 +60,38 @@ export const authService = {
     return data;
   },
 
-  async signOut() {
+  async signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    if (error) throw new Error(handleSupabaseError(error));
   },
 
-  async resetPassword(email: string) {
+  async resetPassword(email: string): Promise<void> {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`
     });
-    if (error) throw error;
+    if (error) throw new Error(handleSupabaseError(error));
   },
 
-  async updatePassword(password: string) {
+  async updatePassword(password: string): Promise<void> {
     const { error } = await supabase.auth.updateUser({ password });
-    if (error) throw error;
+    if (error) throw new Error(handleSupabaseError(error));
   }
 };
 
 // User Services
 export const userService = {
-  async getProfile(userId: string) {
+  async getProfile(userId: string): Promise<User> {
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', userId)
       .single();
 
-    if (error) throw error;
-    return data;
+    if (error) throw new Error(handleSupabaseError(error));
+    return convertSupabaseUser(data);
   },
 
-  async updateProfile(userId: string, updates: Partial<User>) {
+  async updateProfile(userId: string, updates: Partial<User>): Promise<User> {
     const { data, error } = await supabase
       .from('users')
       .update({
@@ -105,21 +107,21 @@ export const userService = {
       .select()
       .single();
 
-    if (error) throw error;
-    return data;
+    if (error) throw new Error(handleSupabaseError(error));
+    return convertSupabaseUser(data);
   },
 
-  async getAllUsers() {
+  async getAllUsers(): Promise<User[]> {
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
-    return data;
+    if (error) throw new Error(handleSupabaseError(error));
+    return data.map(convertSupabaseUser);
   },
 
-  async updateUserRole(userId: string, role: User['role']) {
+  async updateUserRole(userId: string, role: User['role']): Promise<User> {
     const { data, error } = await supabase
       .from('users')
       .update({ role, updated_at: new Date().toISOString() })
@@ -127,11 +129,11 @@ export const userService = {
       .select()
       .single();
 
-    if (error) throw error;
-    return data;
+    if (error) throw new Error(handleSupabaseError(error));
+    return convertSupabaseUser(data);
   },
 
-  async updateKYCStatus(userId: string, status: User['kycStatus']) {
+  async updateKYCStatus(userId: string, status: User['kycStatus']): Promise<User> {
     const { data, error } = await supabase
       .from('users')
       .update({ kyc_status: status, updated_at: new Date().toISOString() })
@@ -139,24 +141,24 @@ export const userService = {
       .select()
       .single();
 
-    if (error) throw error;
-    return data;
+    if (error) throw new Error(handleSupabaseError(error));
+    return convertSupabaseUser(data);
   }
 };
 
 // Project Services
 export const projectService = {
-  async getProjects() {
+  async getProjects(): Promise<Project[]> {
     const { data, error } = await supabase
       .from('projects')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
-    return data;
+    if (error) throw new Error(handleSupabaseError(error));
+    return data.map(convertSupabaseProject);
   },
 
-  async createProject(project: Omit<Project, 'id'>) {
+  async createProject(project: Omit<Project, 'id'>): Promise<Project> {
     const { data, error } = await supabase
       .from('projects')
       .insert({
@@ -169,7 +171,7 @@ export const projectService = {
         start_date: project.startDate,
         end_date: project.endDate,
         image: project.image,
-        total_funding: project.totalFunding,
+        total_funding: project.totalFunding || 0,
         target_funding: project.targetFunding,
         risk_level: project.riskLevel,
         expected_return: project.expectedReturn,
@@ -184,11 +186,11 @@ export const projectService = {
       .select()
       .single();
 
-    if (error) throw error;
-    return data;
+    if (error) throw new Error(handleSupabaseError(error));
+    return convertSupabaseProject(data);
   },
 
-  async updateProject(id: string, updates: Partial<Project>) {
+  async updateProject(id: string, updates: Partial<Project>): Promise<Project> {
     const { data, error } = await supabase
       .from('projects')
       .update({
@@ -221,23 +223,23 @@ export const projectService = {
       .select()
       .single();
 
-    if (error) throw error;
-    return data;
+    if (error) throw new Error(handleSupabaseError(error));
+    return convertSupabaseProject(data);
   },
 
-  async deleteProject(id: string) {
+  async deleteProject(id: string): Promise<void> {
     const { error } = await supabase
       .from('projects')
       .delete()
       .eq('id', id);
 
-    if (error) throw error;
+    if (error) throw new Error(handleSupabaseError(error));
   }
 };
 
 // Blog Services
 export const blogService = {
-  async getPosts(filters?: any) {
+  async getPosts(filters?: any): Promise<BlogPost[]> {
     let query = supabase
       .from('blog_posts')
       .select('*')
@@ -257,11 +259,11 @@ export const blogService = {
 
     const { data, error } = await query;
 
-    if (error) throw error;
-    return data;
+    if (error) throw new Error(handleSupabaseError(error));
+    return data.map(convertSupabaseBlogPost);
   },
 
-  async getPostBySlug(slug: string) {
+  async getPostBySlug(slug: string): Promise<BlogPost> {
     const { data, error } = await supabase
       .from('blog_posts')
       .select('*')
@@ -269,11 +271,11 @@ export const blogService = {
       .eq('status', 'published')
       .single();
 
-    if (error) throw error;
-    return data;
+    if (error) throw new Error(handleSupabaseError(error));
+    return convertSupabaseBlogPost(data);
   },
 
-  async createPost(post: Omit<BlogPost, 'id'>) {
+  async createPost(post: Omit<BlogPost, 'id' | 'views' | 'likes'>): Promise<BlogPost> {
     const { data, error } = await supabase
       .from('blog_posts')
       .insert({
@@ -298,11 +300,11 @@ export const blogService = {
       .select()
       .single();
 
-    if (error) throw error;
-    return data;
+    if (error) throw new Error(handleSupabaseError(error));
+    return convertSupabaseBlogPost(data);
   },
 
-  async updatePost(id: string, updates: Partial<BlogPost>) {
+  async updatePost(id: string, updates: Partial<BlogPost>): Promise<BlogPost> {
     const { data, error } = await supabase
       .from('blog_posts')
       .update({
@@ -326,33 +328,33 @@ export const blogService = {
       .select()
       .single();
 
-    if (error) throw error;
-    return data;
+    if (error) throw new Error(handleSupabaseError(error));
+    return convertSupabaseBlogPost(data);
   },
 
-  async deletePost(id: string) {
+  async deletePost(id: string): Promise<void> {
     const { error } = await supabase
       .from('blog_posts')
       .delete()
       .eq('id', id);
 
-    if (error) throw error;
+    if (error) throw new Error(handleSupabaseError(error));
   },
 
-  async incrementViews(id: string) {
+  async incrementViews(id: string): Promise<void> {
     const { error } = await supabase.rpc('increment_post_views', { post_id: id });
-    if (error) throw error;
+    if (error) throw new Error(handleSupabaseError(error));
   },
 
-  async incrementLikes(id: string) {
+  async incrementLikes(id: string): Promise<void> {
     const { error } = await supabase.rpc('increment_post_likes', { post_id: id });
-    if (error) throw error;
+    if (error) throw new Error(handleSupabaseError(error));
   }
 };
 
 // Storage Services
 export const storageService = {
-  async uploadFile(bucket: string, path: string, file: File) {
+  async uploadFile(bucket: string, path: string, file: File): Promise<any> {
     const { data, error } = await supabase.storage
       .from(bucket)
       .upload(path, file, {
@@ -360,11 +362,11 @@ export const storageService = {
         upsert: false
       });
 
-    if (error) throw error;
+    if (error) throw new Error(handleSupabaseError(error));
     return data;
   },
 
-  async getPublicUrl(bucket: string, path: string) {
+  async getPublicUrl(bucket: string, path: string): Promise<string> {
     const { data } = supabase.storage
       .from(bucket)
       .getPublicUrl(path);
@@ -372,18 +374,18 @@ export const storageService = {
     return data.publicUrl;
   },
 
-  async deleteFile(bucket: string, path: string) {
+  async deleteFile(bucket: string, path: string): Promise<void> {
     const { error } = await supabase.storage
       .from(bucket)
       .remove([path]);
 
-    if (error) throw error;
+    if (error) throw new Error(handleSupabaseError(error));
   }
 };
 
 // Real-time subscriptions
 export const subscriptionService = {
-  subscribeToProjects(callback: (payload: any) => void) {
+  subscribeToProjects(callback: (payload: any) => void): any {
     return supabase
       .channel('projects')
       .on('postgres_changes', 
@@ -393,7 +395,7 @@ export const subscriptionService = {
       .subscribe();
   },
 
-  subscribeToBlogPosts(callback: (payload: any) => void) {
+  subscribeToBlogPosts(callback: (payload: any) => void): any {
     return supabase
       .channel('blog_posts')
       .on('postgres_changes', 
@@ -403,7 +405,7 @@ export const subscriptionService = {
       .subscribe();
   },
 
-  subscribeToUsers(callback: (payload: any) => void) {
+  subscribeToUsers(callback: (payload: any) => void): any {
     return supabase
       .channel('users')
       .on('postgres_changes', 

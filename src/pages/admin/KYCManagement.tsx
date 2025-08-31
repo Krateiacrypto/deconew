@@ -23,6 +23,7 @@ import {
 import { useKYCStore } from '../../store/kycStore';
 import { useAuthStore } from '../../store/authStore';
 import { hasPermission } from '../../utils/permissions';
+import { KYCApplication } from '../../types';
 import toast from 'react-hot-toast';
 
 export const KYCManagement: React.FC = () => {
@@ -31,7 +32,7 @@ export const KYCManagement: React.FC = () => {
   
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedApplication, setSelectedApplication] = useState<any>(null);
+  const [selectedApplication, setSelectedApplication] = useState<KYCApplication | null>(null);
 
   useEffect(() => {
     fetchKYCApplications();

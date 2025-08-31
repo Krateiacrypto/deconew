@@ -1,13 +1,14 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
+import { handleSupabaseError } from '../../utils/supabaseHelpers';
 
 interface SupabaseContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<any>;
-  signUp: (email: string, password: string, userData: any) => Promise<any>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, userData: any) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 }
@@ -34,12 +35,16 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error('Error getting session:', error);
-      } else {
-        setSession(session);
-        setUser(session?.user ?? null);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting session:', handleSupabaseError(error));
+        } else {
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+      } catch (error) {
+        console.error('Session initialization error:', error);
       }
       setLoading(false);
     };
@@ -56,28 +61,31 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
 
       // Handle auth events
       if (event === 'SIGNED_IN' && session?.user) {
-        // Update last login
-        await supabase
-          .from('users')
-          .update({ last_login: new Date().toISOString() })
-          .eq('id', session.user.id);
+        try {
+          // Update last login
+          await supabase
+            .from('users')
+            .update({ last_login: new Date().toISOString() })
+            .eq('id', session.user.id);
+        } catch (error) {
+          console.error('Error updating last login:', error);
+        }
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<void> => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
 
-    if (error) throw error;
-    return data;
+    if (error) throw new Error(handleSupabaseError(error));
   };
 
-  const signUp = async (email: string, password: string, userData: any) => {
+  const signUp = async (email: string, password: string, userData: any): Promise<void> => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -86,7 +94,7 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
       }
     });
 
-    if (error) throw error;
+    if (error) throw new Error(handleSupabaseError(error));
 
     // Create user profile
     if (data.user) {
@@ -104,20 +112,18 @@ export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) 
           two_factor_enabled: false
         });
 
-      if (profileError) throw profileError;
+      if (profileError) throw new Error(handleSupabaseError(profileError));
     }
-
-    return data;
   };
 
-  const signOut = async () => {
+  const signOut = async (): Promise<void> => {
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    if (error) throw new Error(handleSupabaseError(error));
   };
 
-  const resetPassword = async (email: string) => {
+  const resetPassword = async (email: string): Promise<void> => {
     const { error } = await supabase.auth.resetPasswordForEmail(email);
-    if (error) throw error;
+    if (error) throw new Error(handleSupabaseError(error));
   };
 
   const value = {

@@ -6,6 +6,23 @@ Bu rehber, DECARBONIZE.world platformunu kendi sunucunuza veya hosting sağlayı
 
 DECARBONIZE.world platformu, backend servisleri için Supabase kullanmaktadır. Deployment öncesi Supabase kurulumu zorunludur.
 
+### ⚠️ ÖNEMLİ NOTLAR
+
+1. **Environment Variables Güvenliği**
+   - `VITE_SUPABASE_ANON_KEY`: Frontend'de güvenle kullanılabilir (RLS ile korunur)
+   - `SUPABASE_SERVICE_ROLE_KEY`: SADECE server-side işlemler için, frontend'de asla kullanmayın!
+   - `DATABASE_URL`: Direkt veritabanı bağlantısı, migrations ve admin işlemler için
+
+2. **RLS (Row Level Security) Zorunlu**
+   - Her tablo için RLS aktif edilmelidir
+   - Güvenlik politikaları doğru yapılandırılmalıdır
+   - Test kullanıcıları ile politikalar test edilmelidir
+
+3. **Backup ve Monitoring**
+   - Otomatik backup'lar aktif edilmelidir
+   - Error tracking ve monitoring kurulmalıdır
+   - Performance metrikleri takip edilmelidir
+
 ### Adım 1: Supabase Projesi Oluşturma
 
 1. **Supabase Hesabı Oluşturun**
@@ -28,6 +45,47 @@ DECARBONIZE.world platformu, backend servisleri için Supabase kullanmaktadır. 
      - **Anon Key**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
      - **Service Role Key**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
 
+### Adım 1.5: Güvenlik Konfigürasyonu
+
+1. **Authentication Ayarları**
+   ```bash
+   # Dashboard > Authentication > Settings
+   Site URL: https://your-domain.com
+   Redirect URLs: 
+     - https://your-domain.com/auth/callback
+     - https://your-domain.com/reset-password
+     - http://localhost:5173/auth/callback (development)
+   
+   # Email Settings
+   Enable email confirmations: false (ICO için hızlı kayıt)
+   Enable email change confirmations: true
+   Enable phone confirmations: false
+   
+   # Password Settings
+   Minimum password length: 8
+   Password requirements: 
+     - At least one uppercase letter
+     - At least one lowercase letter  
+     - At least one number
+   
+   # Session Settings
+   JWT expiry: 3600 (1 hour)
+   Refresh token expiry: 2592000 (30 days)
+   ```
+
+2. **API Güvenlik Ayarları**
+   ```bash
+   # Dashboard > Settings > API
+   Max rows: 1000
+   Max request size: 3MB
+   Request timeout: 30s
+   
+   # CORS Settings
+   Allowed origins: 
+     - https://your-domain.com
+     - http://localhost:5173 (development)
+   ```
+
 ### Adım 2: Veritabanı Schema Kurulumu
 
 1. **SQL Editor'ı Açın**
@@ -36,6 +94,10 @@ DECARBONIZE.world platformu, backend servisleri için Supabase kullanmaktadır. 
 
 2. **Temel Tabloları Oluşturun**
    ```sql
+   -- Enable necessary extensions
+   CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+   CREATE EXTENSION IF NOT EXISTS "pg_stat_statements";
+   
    -- Users tablosu (auth.users'ı genişletir)
    CREATE TABLE public.users (
      id UUID REFERENCES auth.users(id) PRIMARY KEY,
@@ -60,6 +122,81 @@ DECARBONIZE.world platformu, backend servisleri için Supabase kullanmaktadır. 
      assigned_users TEXT[],
      specializations TEXT[],
      certifications TEXT[]
+   );
+   
+   -- Blog categories tablosu
+   CREATE TABLE public.blog_categories (
+     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+     name TEXT UNIQUE NOT NULL,
+     slug TEXT UNIQUE NOT NULL,
+     description TEXT,
+     color TEXT DEFAULT '#10b981',
+     post_count INTEGER DEFAULT 0 CHECK (post_count >= 0),
+     created_at TIMESTAMPTZ DEFAULT NOW(),
+     updated_at TIMESTAMPTZ DEFAULT NOW()
+   );
+   
+   -- KYC applications tablosu
+   CREATE TABLE public.kyc_applications (
+     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+     user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+     personal_info JSONB NOT NULL,
+     documents TEXT[] DEFAULT '{}',
+     status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'under_review')),
+     submitted_at TIMESTAMPTZ DEFAULT NOW(),
+     reviewed_at TIMESTAMPTZ,
+     reviewed_by UUID REFERENCES public.users(id),
+     rejection_reason TEXT,
+     created_at TIMESTAMPTZ DEFAULT NOW(),
+     updated_at TIMESTAMPTZ DEFAULT NOW()
+   );
+   
+   -- Investments tablosu
+   CREATE TABLE public.investments (
+     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+     user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+     project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+     amount DECIMAL(12,2) NOT NULL CHECK (amount > 0),
+     carbon_credits DECIMAL(10,2) NOT NULL CHECK (carbon_credits > 0),
+     date DATE DEFAULT CURRENT_DATE,
+     status TEXT DEFAULT 'pending' CHECK (status IN ('active', 'completed', 'pending', 'cancelled')),
+     returns DECIMAL(12,2) DEFAULT 0 CHECK (returns >= 0),
+     transaction_hash TEXT,
+     fees DECIMAL(10,2) DEFAULT 0 CHECK (fees >= 0),
+     roi DECIMAL(5,2) DEFAULT 0,
+     created_at TIMESTAMPTZ DEFAULT NOW(),
+     updated_at TIMESTAMPTZ DEFAULT NOW()
+   );
+   
+   -- Staking pools tablosu
+   CREATE TABLE public.staking_pools (
+     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+     name TEXT NOT NULL,
+     token_symbol TEXT NOT NULL,
+     apy DECIMAL(5,2) NOT NULL CHECK (apy >= 0),
+     minimum_stake DECIMAL(10,2) NOT NULL CHECK (minimum_stake > 0),
+     lock_period INTEGER NOT NULL CHECK (lock_period > 0), -- days
+     total_staked DECIMAL(15,2) DEFAULT 0 CHECK (total_staked >= 0),
+     participants INTEGER DEFAULT 0 CHECK (participants >= 0),
+     status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+     description TEXT,
+     created_at TIMESTAMPTZ DEFAULT NOW(),
+     updated_at TIMESTAMPTZ DEFAULT NOW()
+   );
+   
+   -- Staking positions tablosu
+   CREATE TABLE public.staking_positions (
+     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+     user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+     pool_id UUID REFERENCES public.staking_pools(id) ON DELETE CASCADE NOT NULL,
+     amount DECIMAL(12,2) NOT NULL CHECK (amount > 0),
+     start_date TIMESTAMPTZ DEFAULT NOW(),
+     end_date TIMESTAMPTZ NOT NULL,
+     status TEXT DEFAULT 'active' CHECK (status IN ('active', 'completed', 'withdrawn')),
+     rewards DECIMAL(12,2) DEFAULT 0 CHECK (rewards >= 0),
+     last_reward_claim TIMESTAMPTZ,
+     created_at TIMESTAMPTZ DEFAULT NOW(),
+     updated_at TIMESTAMPTZ DEFAULT NOW()
    );
 
    -- Projects tablosu
@@ -120,9 +257,17 @@ DECARBONIZE.world platformu, backend servisleri için Supabase kullanmaktadır. 
 
 3. **Row Level Security (RLS) Politikalarını Ekleyin**
    ```sql
-   -- Users tablosu için RLS
+   -- Enable RLS on all tables
    ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-
+   ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE public.blog_posts ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE public.blog_categories ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE public.kyc_applications ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE public.investments ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE public.staking_pools ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE public.staking_positions ENABLE ROW LEVEL SECURITY;
+   
+   -- Users tablosu için RLS
    CREATE POLICY "Users can read own data" ON public.users
      FOR SELECT USING (auth.uid() = id);
 
@@ -137,10 +282,17 @@ DECARBONIZE.world platformu, backend servisleri için Supabase kullanmaktadır. 
          AND role IN ('admin', 'superadmin')
        )
      );
+   
+   CREATE POLICY "Admins can update all users" ON public.users
+     FOR UPDATE USING (
+       EXISTS (
+         SELECT 1 FROM public.users 
+         WHERE id = auth.uid() 
+         AND role IN ('admin', 'superadmin')
+       )
+     );
 
    -- Projects tablosu için RLS
-   ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
-
    CREATE POLICY "Anyone can read published projects" ON public.projects
      FOR SELECT USING (status = 'active');
 
@@ -160,8 +312,6 @@ DECARBONIZE.world platformu, backend servisleri için Supabase kullanmaktadır. 
      );
 
    -- Blog Posts tablosu için RLS
-   ALTER TABLE public.blog_posts ENABLE ROW LEVEL SECURITY;
-
    CREATE POLICY "Anyone can read published posts" ON public.blog_posts
      FOR SELECT USING (status = 'published');
 
@@ -173,10 +323,116 @@ DECARBONIZE.world platformu, backend servisleri için Supabase kullanmaktadır. 
          AND role IN ('admin', 'superadmin')
        )
      );
+   
+   -- Blog categories policies
+   CREATE POLICY "Anyone can read categories" ON public.blog_categories
+     FOR SELECT USING (true);
+   
+   CREATE POLICY "Admins can manage categories" ON public.blog_categories
+     FOR ALL USING (
+       EXISTS (
+         SELECT 1 FROM public.users 
+         WHERE id = auth.uid() 
+         AND role IN ('admin', 'superadmin')
+       )
+     );
+   
+   -- KYC applications policies
+   CREATE POLICY "Users can read own KYC" ON public.kyc_applications
+     FOR SELECT USING (auth.uid() = user_id);
+   
+   CREATE POLICY "Users can create own KYC" ON public.kyc_applications
+     FOR INSERT WITH CHECK (auth.uid() = user_id);
+   
+   CREATE POLICY "Admins can manage KYC applications" ON public.kyc_applications
+     FOR ALL USING (
+       EXISTS (
+         SELECT 1 FROM public.users 
+         WHERE id = auth.uid() 
+         AND role IN ('admin', 'superadmin')
+       )
+     );
+   
+   -- Investments policies
+   CREATE POLICY "Users can read own investments" ON public.investments
+     FOR SELECT USING (auth.uid() = user_id);
+   
+   CREATE POLICY "Users can create investments" ON public.investments
+     FOR INSERT WITH CHECK (auth.uid() = user_id);
+   
+   CREATE POLICY "Admins can read all investments" ON public.investments
+     FOR SELECT USING (
+       EXISTS (
+         SELECT 1 FROM public.users 
+         WHERE id = auth.uid() 
+         AND role IN ('admin', 'superadmin')
+       )
+     );
+   
+   -- Staking policies
+   CREATE POLICY "Anyone can read active pools" ON public.staking_pools
+     FOR SELECT USING (status = 'active');
+   
+   CREATE POLICY "Users can read own positions" ON public.staking_positions
+     FOR SELECT USING (auth.uid() = user_id);
+   
+   CREATE POLICY "Users can create positions" ON public.staking_positions
+     FOR INSERT WITH CHECK (auth.uid() = user_id);
+   
+   CREATE POLICY "Admins can manage staking" ON public.staking_pools
+     FOR ALL USING (
+       EXISTS (
+         SELECT 1 FROM public.users 
+         WHERE id = auth.uid() 
+         AND role IN ('admin', 'superadmin')
+       )
+     );
    ```
 
 4. **Veritabanı Fonksiyonlarını Ekleyin**
    ```sql
+   -- Auto-update updated_at column
+   CREATE OR REPLACE FUNCTION update_updated_at_column()
+   RETURNS TRIGGER AS $$
+   BEGIN
+     NEW.updated_at = NOW();
+     RETURN NEW;
+   END;
+   $$ LANGUAGE plpgsql;
+   
+   -- Create triggers for all tables
+   CREATE TRIGGER update_users_updated_at
+     BEFORE UPDATE ON public.users
+     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+   
+   CREATE TRIGGER update_projects_updated_at
+     BEFORE UPDATE ON public.projects
+     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+   
+   CREATE TRIGGER update_blog_posts_updated_at
+     BEFORE UPDATE ON public.blog_posts
+     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+   
+   CREATE TRIGGER update_blog_categories_updated_at
+     BEFORE UPDATE ON public.blog_categories
+     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+   
+   CREATE TRIGGER update_kyc_applications_updated_at
+     BEFORE UPDATE ON public.kyc_applications
+     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+   
+   CREATE TRIGGER update_investments_updated_at
+     BEFORE UPDATE ON public.investments
+     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+   
+   CREATE TRIGGER update_staking_pools_updated_at
+     BEFORE UPDATE ON public.staking_pools
+     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+   
+   CREATE TRIGGER update_staking_positions_updated_at
+     BEFORE UPDATE ON public.staking_positions
+     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+   
    -- Blog post views artırma fonksiyonu
    CREATE OR REPLACE FUNCTION increment_post_views(post_id UUID)
    RETURNS VOID AS $$
@@ -197,27 +453,66 @@ DECARBONIZE.world platformu, backend servisleri için Supabase kullanmaktadır. 
    END;
    $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-   -- Updated_at otomatik güncelleme trigger'ı
-   CREATE OR REPLACE FUNCTION update_updated_at_column()
+   -- Update blog category post counts
+   CREATE OR REPLACE FUNCTION update_category_post_count()
    RETURNS TRIGGER AS $$
    BEGIN
-     NEW.updated_at = NOW();
-     RETURN NEW;
+     -- Update old category count
+     IF TG_OP = 'UPDATE' AND OLD.category != NEW.category THEN
+       UPDATE public.blog_categories 
+       SET post_count = (
+         SELECT COUNT(*) FROM public.blog_posts 
+         WHERE category = OLD.category AND status = 'published'
+       )
+       WHERE name = OLD.category;
+     END IF;
+     
+     -- Update new category count
+     IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
+       UPDATE public.blog_categories 
+       SET post_count = (
+         SELECT COUNT(*) FROM public.blog_posts 
+         WHERE category = NEW.category AND status = 'published'
+       )
+       WHERE name = NEW.category;
+     END IF;
+     
+     -- Update category count on delete
+     IF TG_OP = 'DELETE' THEN
+       UPDATE public.blog_categories 
+       SET post_count = (
+         SELECT COUNT(*) FROM public.blog_posts 
+         WHERE category = OLD.category AND status = 'published'
+       )
+       WHERE name = OLD.category;
+     END IF;
+     
+     RETURN COALESCE(NEW, OLD);
    END;
    $$ LANGUAGE plpgsql;
-
-   -- Trigger'ları ekle
-   CREATE TRIGGER update_users_updated_at
-     BEFORE UPDATE ON public.users
-     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-   CREATE TRIGGER update_projects_updated_at
-     BEFORE UPDATE ON public.projects
-     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-   CREATE TRIGGER update_blog_posts_updated_at
-     BEFORE UPDATE ON public.blog_posts
-     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+   
+   CREATE TRIGGER update_blog_category_count
+     AFTER INSERT OR UPDATE OR DELETE ON public.blog_posts
+     FOR EACH ROW EXECUTE FUNCTION update_category_post_count();
+   
+   -- User profile creation trigger
+   CREATE OR REPLACE FUNCTION public.handle_new_user()
+   RETURNS TRIGGER AS $$
+   BEGIN
+     INSERT INTO public.users (id, email, name, role)
+     VALUES (
+       NEW.id,
+       NEW.email,
+       COALESCE(NEW.raw_user_meta_data->>'name', 'User'),
+       COALESCE(NEW.raw_user_meta_data->>'role', 'user')
+     );
+     RETURN NEW;
+   END;
+   $$ LANGUAGE plpgsql SECURITY DEFINER;
+   
+   CREATE TRIGGER on_auth_user_created
+     AFTER INSERT ON auth.users
+     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
    ```
 
 ### Adım 3: Storage Bucket'larını Oluşturun
@@ -245,6 +540,13 @@ DECARBONIZE.world platformu, backend servisleri için Supabase kullanmaktadır. 
    
    CREATE POLICY "Authenticated users can upload avatars" ON storage.objects
      FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.role() = 'authenticated');
+   
+   CREATE POLICY "Users can update own avatars" ON storage.objects
+     FOR UPDATE USING (
+       bucket_id = 'avatars' 
+       AND auth.role() = 'authenticated'
+       AND (storage.foldername(name))[1] = auth.uid()::text
+     );
 
    -- Project images bucket - Public read, admin write
    INSERT INTO storage.buckets (id, name, public) VALUES ('project-images', 'project-images', true);
@@ -252,10 +554,26 @@ DECARBONIZE.world platformu, backend servisleri için Supabase kullanmaktadır. 
    CREATE POLICY "Project images are publicly accessible" ON storage.objects
      FOR SELECT USING (bucket_id = 'project-images');
    
-   CREATE POLICY "Admins can upload project images" ON storage.objects
-     FOR INSERT WITH CHECK (
+   CREATE POLICY "Admins can manage project images" ON storage.objects
+     FOR ALL USING (
        bucket_id = 'project-images' AND 
        EXISTS (
+         SELECT 1 FROM public.users 
+         WHERE id = auth.uid() 
+         AND role IN ('admin', 'superadmin')
+       )
+     );
+   
+   -- Blog images bucket - Public read, admin write
+   INSERT INTO storage.buckets (id, name, public) VALUES ('blog-images', 'blog-images', true);
+   
+   CREATE POLICY "Blog images are publicly accessible" ON storage.objects
+     FOR SELECT USING (bucket_id = 'blog-images');
+   
+   CREATE POLICY "Admins can manage blog images" ON storage.objects
+     FOR ALL USING (
+       bucket_id = 'blog-images' 
+       AND EXISTS (
          SELECT 1 FROM public.users 
          WHERE id = auth.uid() 
          AND role IN ('admin', 'superadmin')
@@ -270,30 +588,71 @@ DECARBONIZE.world platformu, backend servisleri için Supabase kullanmaktadır. 
        bucket_id = 'documents' AND 
        (auth.uid()::text = (storage.foldername(name))[1])
      );
+   
+   CREATE POLICY "Admins can access all documents" ON storage.objects
+     FOR SELECT USING (
+       bucket_id = 'documents' 
+       AND EXISTS (
+         SELECT 1 FROM public.users 
+         WHERE id = auth.uid() 
+         AND role IN ('admin', 'superadmin')
+       )
+     );
    ```
 
-### Adım 4: Auth Ayarları
+### Adım 4: Performance Indexes
 
-1. **Authentication Ayarları**
-   - Dashboard > Authentication > Settings
-   - **Site URL**: `https://your-domain.com`
-   - **Redirect URLs**: 
-     ```
-     https://your-domain.com/auth/callback
-     https://your-domain.com/reset-password
-     http://localhost:5173/auth/callback (development için)
-     ```
+```sql
+-- Create indexes for better performance
+CREATE INDEX idx_users_email ON public.users(email);
+CREATE INDEX idx_users_role ON public.users(role);
+CREATE INDEX idx_users_kyc_status ON public.users(kyc_status);
+CREATE INDEX idx_users_is_active ON public.users(is_active);
 
-2. **E-posta Şablonları**
-   - Dashboard > Authentication > Email Templates
-   - Confirm signup, Reset password şablonlarını Türkçe'ye çevirin
-   - SMTP ayarlarını yapılandırın (opsiyonel)
+CREATE INDEX idx_projects_status ON public.projects(status);
+CREATE INDEX idx_projects_category ON public.projects(category);
+CREATE INDEX idx_projects_created_by ON public.projects(created_by);
+CREATE INDEX idx_projects_advisor_id ON public.projects(advisor_id);
 
-3. **Auth Providers** (Opsiyonel)
-   - Google, GitHub gibi sosyal login sağlayıcıları
-   - Her provider için client ID ve secret gerekli
+CREATE INDEX idx_blog_posts_status ON public.blog_posts(status);
+CREATE INDEX idx_blog_posts_slug ON public.blog_posts(slug);
+CREATE INDEX idx_blog_posts_category ON public.blog_posts(category);
+CREATE INDEX idx_blog_posts_published_at ON public.blog_posts(published_at DESC);
+CREATE INDEX idx_blog_posts_author ON public.blog_posts(author);
 
-### Adım 5: Environment Variables Ayarlama
+CREATE INDEX idx_investments_user_id ON public.investments(user_id);
+CREATE INDEX idx_investments_project_id ON public.investments(project_id);
+CREATE INDEX idx_investments_status ON public.investments(status);
+
+CREATE INDEX idx_staking_positions_user_id ON public.staking_positions(user_id);
+CREATE INDEX idx_staking_positions_pool_id ON public.staking_positions(pool_id);
+CREATE INDEX idx_staking_positions_status ON public.staking_positions(status);
+
+CREATE INDEX idx_kyc_applications_user_id ON public.kyc_applications(user_id);
+CREATE INDEX idx_kyc_applications_status ON public.kyc_applications(status);
+```
+
+### Adım 5: Seed Data
+
+```sql
+-- Insert default blog categories
+INSERT INTO public.blog_categories (name, slug, description, color) VALUES
+  ('Karbon Kredisi', 'karbon-kredisi', 'Karbon kredisi piyasası ve tokenleştirme', '#10b981'),
+  ('Sürdürülebilirlik', 'surdurulebilirlik', 'Çevre koruma ve sürdürülebilir kalkınma', '#3b82f6'),
+  ('Blockchain', 'blockchain', 'Blockchain teknolojisi ve uygulamaları', '#8b5cf6'),
+  ('Yenilenebilir Enerji', 'yenilenebilir-enerji', 'Temiz enerji teknolojileri', '#f59e0b');
+
+-- Insert default staking pools
+INSERT INTO public.staking_pools (name, token_symbol, apy, minimum_stake, lock_period, description) VALUES
+  ('DCB Staking Pool', 'DCB', 12.5, 100, 30, 'Stake your DCB tokens and earn rewards'),
+  ('Carbon Credit Pool', 'CO2', 8.7, 50, 90, 'Stake carbon credits for long-term rewards'),
+  ('High Yield Pool', 'DCB', 18.2, 1000, 180, 'High APY pool with longer lock period');
+
+-- Note: Admin user should be created manually through Supabase Auth UI
+-- Then update the users table with admin role
+```
+
+### Adım 6: Environment Variables Ayarlama
 
 **Geliştirme için (.env.local):**
 ```bash
@@ -325,7 +684,7 @@ VITE_APP_URL=https://your-domain.com
 VITE_ENVIRONMENT=production
 ```
 
-### Adım 6: Supabase CLI Kurulumu (Opsiyonel - Local Development)
+### Adım 7: Supabase CLI Kurulumu (Opsiyonel - Local Development)
 
 ```bash
 # Supabase CLI kurulumu
@@ -342,36 +701,6 @@ supabase db push
 
 # Type definitions oluşturun
 supabase gen types typescript --local > src/types/supabase.ts
-```
-
-### Adım 7: Veritabanı Seed Data (Opsiyonel)
-
-```sql
--- Admin kullanıcısı oluşturma (manuel olarak auth.users'a ekledikten sonra)
-INSERT INTO public.users (
-  id, 
-  email, 
-  name, 
-  role, 
-  is_active, 
-  kyc_status, 
-  email_verified
-) VALUES (
-  'your-admin-user-id', 
-  'admin@decarbonize.world', 
-  'Admin User', 
-  'superadmin', 
-  true, 
-  'approved', 
-  true
-);
-
--- Örnek blog kategorileri
-INSERT INTO public.blog_categories (name, slug, description, color) VALUES
-  ('Karbon Kredisi', 'karbon-kredisi', 'Karbon kredisi piyasası ve tokenleştirme', '#10b981'),
-  ('Sürdürülebilirlik', 'surdurulebilirlik', 'Çevre koruma ve sürdürülebilir kalkınma', '#3b82f6'),
-  ('Blockchain', 'blockchain', 'Blockchain teknolojisi ve uygulamaları', '#8b5cf6'),
-  ('Yenilenebilir Enerji', 'yenilenebilir-enerji', 'Temiz enerji teknolojileri', '#f59e0b');
 ```
 
 ### Adım 8: Backup ve Monitoring
@@ -405,33 +734,6 @@ INSERT INTO public.blog_categories (name, slug, description, color) VALUES
    -- Dashboard > Settings > Database > Connection pooling
    ```
 
-2. **Auth Security**
-   - Dashboard > Authentication > Settings
-   - **Password requirements**: Minimum 8 karakter, büyük/küçük harf, sayı
-   - **Session timeout**: 24 saat
-   - **Refresh token rotation**: Aktif
-   - **Double confirm email changes**: Aktif
-
-3. **API Security**
-   - Dashboard > Settings > API
-   - **CORS origins**: Sadece production domain'leri
-   - **JWT expiry**: 1 saat
-   - **Refresh token expiry**: 30 gün
-
-### Adım 10: Performance Optimization
-
-1. **Database Indexes**
-   ```sql
-   -- Performans için index'ler
-   CREATE INDEX idx_users_email ON public.users(email);
-   CREATE INDEX idx_users_role ON public.users(role);
-   CREATE INDEX idx_projects_status ON public.projects(status);
-   CREATE INDEX idx_projects_category ON public.projects(category);
-   CREATE INDEX idx_blog_posts_status ON public.blog_posts(status);
-   CREATE INDEX idx_blog_posts_slug ON public.blog_posts(slug);
-   CREATE INDEX idx_blog_posts_published_at ON public.blog_posts(published_at DESC);
-   ```
-
 2. **Connection Pooling**
    - Dashboard > Settings > Database
    - Connection pooling aktif edin
@@ -442,7 +744,7 @@ INSERT INTO public.blog_categories (name, slug, description, color) VALUES
    - Static asset'ler için CDN ayarlayın
    - Browser caching headers ekleyin
 
-### Adım 11: Supabase Deployment Checklist
+### Adım 10: Supabase Deployment Checklist
 
 **Deployment öncesi kontrol listesi:**
 
@@ -457,8 +759,11 @@ INSERT INTO public.blog_categories (name, slug, description, color) VALUES
 - [ ] ✅ Monitoring aktif edildi
 - [ ] ✅ Güvenlik ayarları tamamlandı
 - [ ] ✅ Performance optimizasyonları uygulandı
+- [ ] ✅ Seed data eklendi
+- [ ] ✅ Indexes oluşturuldu
+- [ ] ✅ Functions ve triggers eklendi
 
-### Adım 12: Test ve Doğrulama
+### Adım 11: Test ve Doğrulama
 
 ```bash
 # Local test
@@ -474,6 +779,40 @@ console.log('Supabase Key:', import.meta.env.VITE_SUPABASE_ANON_KEY);
 # Login sayfasından giriş yapın
 # Dashboard'a erişimi kontrol edin
 ```
+
+### Adım 12: Production Deployment
+
+1. **Environment Variables Kontrolü**
+   ```bash
+   # Production .env dosyasında olması gerekenler:
+   VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+   VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+   VITE_APP_NAME=DECARBONIZE.world
+   VITE_APP_URL=https://your-domain.com
+   VITE_ENVIRONMENT=production
+   ```
+
+2. **Database Migration Kontrolü**
+   ```sql
+   -- Tüm tabloların oluşturulduğunu kontrol edin
+   SELECT table_name FROM information_schema.tables 
+   WHERE table_schema = 'public' 
+   ORDER BY table_name;
+   
+   -- RLS politikalarının aktif olduğunu kontrol edin
+   SELECT schemaname, tablename, rowsecurity 
+   FROM pg_tables 
+   WHERE schemaname = 'public';
+   ```
+
+3. **Final Test Checklist**
+   - [ ] ✅ Kullanıcı kayıt/giriş çalışıyor
+   - [ ] ✅ Dashboard erişimi çalışıyor
+   - [ ] ✅ Blog sistemi çalışıyor
+   - [ ] ✅ Proje listesi çalışıyor
+   - [ ] ✅ Admin paneli çalışıyor
+   - [ ] ✅ File upload çalışıyor
+   - [ ] ✅ Real-time updates çalışıyor
 
 ### Supabase Maliyet Optimizasyonu
 
@@ -497,6 +836,9 @@ console.log('Supabase Key:', import.meta.env.VITE_SUPABASE_ANON_KEY);
    - Connection pooling aktif edin
    - Büyük dosyaları CDN'de saklayın
    - Eski log'ları temizleyin
+   - Unused storage files'ları silin
+   - API rate limiting kullanın
+   - Efficient RLS policies yazın
 
 ## 📋 Gereksinimler
 

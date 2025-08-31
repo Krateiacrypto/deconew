@@ -36,6 +36,7 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { useDataStore } from '../../store/dataStore';
 import { hasPermission, getRoleDisplayName, getRoleColor, canManageUser } from '../../utils/permissions';
+import { User as UserType } from '../../types';
 import toast from 'react-hot-toast';
 
 export const UserProfiles: React.FC = () => {
@@ -45,7 +46,7 @@ export const UserProfiles: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState('all');
   const [kycFilter, setKycFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
@@ -107,7 +108,7 @@ export const UserProfiles: React.FC = () => {
     }
   };
 
-  const getUserStats = (targetUser: any) => {
+  const getUserStats = (targetUser: UserType) => {
     switch (targetUser.role) {
       case 'user':
         return [
