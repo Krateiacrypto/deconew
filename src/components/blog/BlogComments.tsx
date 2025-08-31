@@ -231,11 +231,11 @@ export const BlogComments: React.FC<BlogCommentsProps> = ({ postId }) => {
             >
               <div className="flex items-start space-x-4">
                 <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  {comment.authorAvatar ? (
+                  {user?.avatar ? (
                     <img
-                      src={comment.authorAvatar}
-                      alt={comment.author}
-                      className="w-10 h-10 rounded-full object-cover"
+                      src={user.avatar}
+                      alt={user.name}
+                      className="w-8 h-8 rounded-full object-cover"
                     />
                   ) : (
                     <User className="w-5 h-5 text-gray-600" />

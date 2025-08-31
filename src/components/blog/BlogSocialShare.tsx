@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Share2, Twitter, Facebook, Linkedin, Link, Copy, MessageCircle, Mail } from 'lucide-react';
 import { BlogPost } from '../../types/blog';
 import toast from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 interface BlogSocialShareProps {
   post: BlogPost;

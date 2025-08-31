@@ -21,6 +21,7 @@ import { useBlogStore } from '../store/blogStore';
 import { BlogComments } from '../components/blog/BlogComments';
 import { BlogSocialShare } from '../components/blog/BlogSocialShare';
 import { BlogPostCard } from '../components/blog/BlogPostCard';
+import toast from 'react-hot-toast';
 
 export const BlogDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();

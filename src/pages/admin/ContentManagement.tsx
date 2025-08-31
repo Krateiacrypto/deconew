@@ -40,7 +40,6 @@ import { TeamManager } from '../../components/admin/content/TeamManager';
 import { BannerManager } from '../../components/admin/content/BannerManager';
 import { BlogManagement } from './BlogManagement';
 import toast from 'react-hot-toast';
-
 type ContentSection = 'content' | 'roadmap' | 'team' | 'banners' | 'blog' | 'audit' | 'analytics';
 
 export const ContentManagement: React.FC = () => {

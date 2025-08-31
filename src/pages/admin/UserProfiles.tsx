@@ -36,6 +36,7 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { useDataStore } from '../../store/dataStore';
 import { hasPermission, getRoleDisplayName, getRoleColor, canManageUser } from '../../utils/permissions';
+import { Star, Leaf, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const UserProfiles: React.FC = () => {
@@ -127,7 +128,7 @@ export const UserProfiles: React.FC = () => {
         return [
           { label: 'Doğrulanan Proje', value: Math.floor(Math.random() * 100), icon: CheckCircle, color: 'emerald' },
           { label: 'Bekleyen İnceleme', value: Math.floor(Math.random() * 20), icon: Clock, color: 'yellow' },
-          { label: 'Toplam Karbon Kredisi', value: Math.floor(Math.random() * 500000).toLocaleString() + ' tCO₂', icon: Leaf, color: 'green' },
+          { label: 'Toplam Karbon Kredisi', value: Math.floor(Math.random() * 500000).toLocaleString() + ' tCO₂', icon: Award, color: 'green' },
           { label: 'Doğrulama Oranı', value: (85 + Math.random() * 10).toFixed(1) + '%', icon: Shield, color: 'blue' }
         ];
       case 'ngo':

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useDataStore } from '../../store/dataStore';
+import toast from 'react-hot-toast';
 
 export const VerificationDashboard: React.FC = () => {
   const { user } = useAuthStore();
