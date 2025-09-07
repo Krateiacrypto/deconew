@@ -16,7 +16,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { BlogPost, BlogCategory } from '../../types/blog';
-import { BlogEditor } from './BlogEditor';
+import { BlogEditor } from '../editor/BlogEditor';
 import { useBlogStore } from '../../store/blogStore';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';

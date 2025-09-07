@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { SupabaseProvider } from './components/providers/SupabaseProvider';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { HomePage } from './pages/HomePage';
@@ -61,33 +62,34 @@ const DashboardRouter: React.FC = () => {
 
 function App() {
   return (
-    <SupabaseProvider>
-      <Router>
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50">
-          <Toaster 
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#363636',
-                color: '#fff',
-              },
-              success: {
+    <ErrorBoundary>
+      <SupabaseProvider>
+        <Router>
+          <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50">
+            <Toaster 
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
                 style: {
-                  background: '#10b981',
+                  background: '#363636',
+                  color: '#fff',
                 },
-              },
-              error: {
-                style: {
-                  background: '#ef4444',
+                success: {
+                  style: {
+                    background: '#10b981',
+                  },
                 },
-              },
-            }}
-          />
-          
-          <Header />
-          <main className="pt-20">
-            <Routes>
+                error: {
+                  style: {
+                    background: '#ef4444',
+                  },
+                },
+              }}
+            />
+            
+            <Header />
+            <main className="pt-20">
+              <Routes>
               {/* Public Routes */}
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
@@ -218,12 +220,13 @@ function App() {
               
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-          <Footer />
-        </div>
-      </Router>
-    </SupabaseProvider>
+              </Routes>
+            </main>
+            <Footer />
+          </div>
+        </Router>
+      </SupabaseProvider>
+    </ErrorBoundary>
   );
 }
 
