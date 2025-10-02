@@ -93,11 +93,11 @@ VITE_WALLET_CONNECT_PROJECT_ID=your-walletconnect-id
 VITE_GOOGLE_ANALYTICS_ID=your-ga-id
 ```
 ## 👥 Kullanıcı Rolleri
-- **User**: Temel kullanıcı, yatırım yapabilir
-- **Advisor**: Danışmanlık hizmetleri verir
-- **Verification Org**: Projeleri doğrular
-- **NGO**: Çevre projelerini yönetir
-- **Carbon Provider**: Karbon kredisi sağlar
+- **User**: Temel kullanıcı, yatırım yapabilir. Kurumsal ve özel kullanıcı türleri vardır.
+- **Advisor**: Projeler Hakkında Danışmanlık hizmetleri verir, danışmanlık ücreti proje bazlı oranlarda belirlenir
+- **Verification Org**: Projeleri doğrular, doğrulamalardan komisyon alır
+- **NGO**: Çevresel sosyal sorumluluk projeleri yönetir ve oluşturur. Bu projelere bağış yapılabilir. Carbon provider ve Corporate Users projelere sponsor olabilir.
+- **Carbon Provider**: Karbon kredisi sağlar, karbon kredilerinin değeri CO2 token ile belirlenir
 - **Admin**: Platform yöneticisi
 - **Super Admin**: Tam sistem erişimi
 ## 🔐 Güvenlik
