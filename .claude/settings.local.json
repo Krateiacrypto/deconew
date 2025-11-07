@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)",
+      "Bash(npm run build:*)",
+      "Bash(node dist/index.js:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

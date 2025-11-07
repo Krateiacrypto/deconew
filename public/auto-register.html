@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Kullanıcı Oluşturma - Decarbonize</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .info { color: #17a2b8; }
+        .progress {
+            margin-top: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 25px;
+        }
+        .progress-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+        .account-list {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .account-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Otomatik Demo Kullanıcı Oluşturma</h1>
+        <p class="subtitle">Tüm demo hesaplarını tek tıkla oluşturun</p>
+
+        <div class="account-list">
+            <h3>Oluşturulacak Hesaplar:</h3>
+            <div class="account-item">✅ admin@decarbonize.world - Platform Admin</div>
+            <div class="account-item">✅ advisor@decarbonize.world - Investment Advisor</div>
+            <div class="account-item">✅ verification@decarbonize.world - Carbon Verifier</div>
+            <div class="account-item">✅ ngo@decarbonize.world - NGO Organization</div>
+            <div class="account-item">✅ provider@decarbonize.world - Carbon Provider</div>
+            <div class="account-item">✅ institutional@decarbonize.world - Institutional Investor</div>
+            <div class="account-item">✅ proinvestor@decarbonize.world - Pro Investor</div>
+            <div class="account-item">✅ freeinvestor@decarbonize.world - Free Investor</div>
+        </div>
+
+        <button id="createBtn" onclick="createAllUsers()">
+            Tüm Kullanıcıları Oluştur
+        </button>
+        <button onclick="clearLog()">Logu Temizle</button>
+
+        <div class="progress" id="progressContainer" style="display: none;">
+            <div class="progress-bar" id="progressBar">0%</div>
+        </div>
+
+        <div class="log" id="logContainer"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+        const supabaseUrl = 'https://0ec90b57d6e95fcbda19832f.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJib2x0IiwicmVmIjoiMGVjOTBiNTdkNmU5NWZjYmRhMTk4MzJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODE1NzQsImV4cCI6MTc1ODg4MTU3NH0.9I8-U0x86Ak8t2DGaIk0HfvTSLsAyzdnz-Nw00mMkKw';
+
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        const demoAccounts = [
+            { email: 'admin@decarbonize.world', password: 'Demo123!@#', name: 'Platform Admin', role: 'admin' },
+            { email: 'advisor@decarbonize.world', password: 'Demo123!@#', name: 'Investment Advisor', role: 'advisor' },
+            { email: 'verification@decarbonize.world', password: 'Demo123!@#', name: 'Carbon Verification Org', role: 'verifier' },
+            { email: 'ngo@decarbonize.world', password: 'Demo123!@#', name: 'Green Future Foundation', role: 'ngo' },
+            { email: 'provider@decarbonize.world', password: 'Demo123!@#', name: 'EcoCarbon Solutions', role: 'carbon_provider' },
+            { email: 'institutional@decarbonize.world', password: 'Demo123!@#', name: 'Global Investment Fund', role: 'institutional_investor' },
+            { email: 'proinvestor@decarbonize.world', password: 'Demo123!@#', name: 'Pro Investor', role: 'pro_investor' },
+            { email: 'freeinvestor@decarbonize.world', password: 'Demo123!@#', name: 'Free Investor', role: 'free_investor' }
+        ];
+
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function updateProgress(current, total) {
+            const percentage = Math.round((current / total) * 100);
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = percentage + '%';
+            progressBar.textContent = percentage + '%';
+        }
+
+        window.clearLog = function() {
+            document.getElementById('logContainer').innerHTML = '';
+        }
+
+        window.createAllUsers = async function() {
+            const btn = document.getElementById('createBtn');
+            const progressContainer = document.getElementById('progressContainer');
+
+            btn.disabled = true;
+            progressContainer.style.display = 'block';
+
+            log('🚀 Kullanıcı oluşturma işlemi başlatıldı...', 'info');
+
+            let successCount = 0;
+            let skipCount = 0;
+            let errorCount = 0;
+
+            for (let i = 0; i < demoAccounts.length; i++) {
+                const account = demoAccounts[i];
+                updateProgress(i, demoAccounts.length);
+
+                try {
+                    log(`Oluşturuluyor: ${account.email}...`, 'info');
+
+                    const { data, error } = await supabase.auth.signUp({
+                        email: account.email,
+                        password: account.password,
+                        options: {
+                            data: {
+                                name: account.name,
+                                role: account.role
+                            }
+                        }
+                    });
+
+                    if (error) {
+                        if (error.message.includes('already') || error.message.includes('exists')) {
+                            log(`⚠️ ${account.email} zaten mevcut - ATLANDI`, 'warning');
+                            skipCount++;
+                        } else {
+                            log(`❌ HATA: ${account.email} - ${error.message}`, 'error');
+                            errorCount++;
+                        }
+                    } else if (data.user) {
+                        log(`✅ BAŞARILI: ${account.email} (${account.role})`, 'success');
+                        successCount++;
+
+                        // Update public.users table with the auth ID
+                        try {
+                            const { error: updateError } = await supabase
+                                .from('users')
+                                .update({ id: data.user.id })
+                                .eq('email', account.email);
+
+                            if (!updateError) {
+                                log(`   ✅ public.users tablosu güncellendi`, 'success');
+                            }
+                        } catch (e) {
+                            log(`   ⚠️ public.users tablosu güncellenemedi`, 'warning');
+                        }
+                    }
+
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                } catch (err) {
+                    log(`❌ Beklenmeyen hata: ${account.email} - ${err.message}`, 'error');
+                    errorCount++;
+                }
+            }
+
+            updateProgress(demoAccounts.length, demoAccounts.length);
+
+            log('═══════════════════════════════════════', 'info');
+            log(`✅ Başarılı: ${successCount}`, 'success');
+            log(`⚠️ Zaten vardı: ${skipCount}`, 'warning');
+            log(`❌ Hata: ${errorCount}`, 'error');
+            log(`📊 Toplam: ${demoAccounts.length}`, 'info');
+            log('═══════════════════════════════════════', 'info');
+
+            if (successCount > 0 || skipCount > 0) {
+                log('🎉 Artık tüm hesaplarla giriş yapabilirsiniz!', 'success');
+                log('📧 Şifre (hepsi için): Demo123!@#', 'success');
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Tekrar Çalıştır';
+        }
+    </script>
+</body>
+</html>

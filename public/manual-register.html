@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manuel Kullanıcı Kayıt Rehberi - Decarbonize</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            line-height: 1.6;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        h2 {
+            color: #764ba2;
+            margin-top: 30px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .alert {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+        .account-box {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        .account-box h3 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        .credential {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+            border-left: 3px solid #667eea;
+        }
+        .step {
+            background: #e9ecef;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        button:hover, a.button:hover {
+            transform: translateY(-2px);
+        }
+        a.button {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            text-decoration: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-block;
+            margin: 10px 5px;
+        }
+        .important {
+            background: #d1ecf1;
+            border-left: 4px solid #0c5460;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 Manuel Kullanıcı Kayıt Rehberi</h1>
+        <p>Supabase'e doğrudan erişim olmadığı için kullanıcıları platform üzerinden manuel olarak kaydetmeniz gerekiyor.</p>
+
+        <div class="alert">
+            <strong>⚠️ Önemli:</strong> Auto-register çalışmadı çünkü bu bir sandbox ortamı. Manuel kayıt yapmanız gerekiyor.
+        </div>
+
+        <h2>🎯 Hızlı Yöntem: Platform'dan Kayıt</h2>
+
+        <div class="important">
+            <strong>✨ En Kolay Yol:</strong> Her kullanıcıyı platform'un register sayfasından kaydedin. Bu işlem 2-3 dakika sürer.
+        </div>
+
+        <div class="step">
+            <span class="step-number">1</span>
+            <strong>Register sayfasına gidin:</strong>
+            <a href="/register" class="button" target="_blank">Kayıt Sayfasını Aç</a>
+        </div>
+
+        <div class="step">
+            <span class="step-number">2</span>
+            <strong>Her hesap için kayıt yapın:</strong> Aşağıdaki bilgileri kullanarak sırayla kayıt olun.
+        </div>
+
+        <h2>📋 Kayıt Yapılacak Hesaplar</h2>
+
+        <div class="account-box">
+            <h3>1️⃣ Platform Admin</h3>
+            <div class="credential">📧 Email: admin@decarbonize.world</div>
+            <div class="credential">🔑 Şifre: Demo123!@#</div>
+            <div class="credential">👤 İsim: Platform Admin</div>
+            <div class="credential">🎭 Role: admin (kayıttan sonra ayarlanacak)</div>
+        </div>
+
+        <div class="account-box">
+            <h3>2️⃣ Investment Advisor</h3>
+            <div class="credential">📧 Email: advisor@decarbonize.world</div>
+            <div class="credential">🔑 Şifre: Demo123!@#</div>
+            <div class="credential">👤 İsim: Investment Advisor</div>
+            <div class="credential">🎭 Role: advisor</div>
+        </div>
+
+        <div class="account-box">
+            <h3>3️⃣ Verification Org</h3>
+            <div class="credential">📧 Email: verification@decarbonize.world</div>
+            <div class="credential">🔑 Şifre: Demo123!@#</div>
+            <div class="credential">👤 İsim: Carbon Verification Org</div>
+            <div class="credential">🎭 Role: verifier</div>
+        </div>
+
+        <div class="account-box">
+            <h3>4️⃣ NGO</h3>
+            <div class="credential">📧 Email: ngo@decarbonize.world</div>
+            <div class="credential">🔑 Şifre: Demo123!@#</div>
+            <div class="credential">👤 İsim: Green Future Foundation</div>
+            <div class="credential">🎭 Role: ngo</div>
+        </div>
+
+        <div class="account-box">
+            <h3>5️⃣ Carbon Provider</h3>
+            <div class="credential">📧 Email: provider@decarbonize.world</div>
+            <div class="credential">🔑 Şifre: Demo123!@#</div>
+            <div class="credential">👤 İsim: EcoCarbon Solutions</div>
+            <div class="credential">🎭 Role: carbon_provider</div>
+        </div>
+
+        <div class="account-box">
+            <h3>6️⃣ Institutional Investor</h3>
+            <div class="credential">📧 Email: institutional@decarbonize.world</div>
+            <div class="credential">🔑 Şifre: Demo123!@#</div>
+            <div class="credential">👤 İsim: Global Investment Fund</div>
+            <div class="credential">🎭 Role: institutional_investor</div>
+        </div>
+
+        <div class="account-box">
+            <h3>7️⃣ Pro Investor</h3>
+            <div class="credential">📧 Email: proinvestor@decarbonize.world</div>
+            <div class="credential">🔑 Şifre: Demo123!@#</div>
+            <div class="credential">👤 İsim: Pro Investor</div>
+            <div class="credential">🎭 Role: pro_investor</div>
+        </div>
+
+        <div class="account-box">
+            <h3>8️⃣ Free Investor</h3>
+            <div class="credential">📧 Email: freeinvestor@decarbonize.world</div>
+            <div class="credential">🔑 Şifre: Demo123!@#</div>
+            <div class="credential">👤 İsim: Free Investor</div>
+            <div class="credential">🎭 Role: free_investor</div>
+        </div>
+
+        <h2>🔧 Kayıt Sonrası Adımlar</h2>
+
+        <div class="step">
+            <span class="step-number">3</span>
+            <strong>Her kayıttan sonra:</strong>
+            <ul>
+                <li>Logout yapın</li>
+                <li>Bir sonraki kullanıcı için tekrar register sayfasına gidin</li>
+                <li>Tüm kullanıcıları oluşturana kadar devam edin</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <span class="step-number">4</span>
+            <strong>Rolleri kontrol edin:</strong>
+            <p>Eğer superadmin hesabınız varsa, her kullanıcının rolünü kontrol edin ve düzeltin.</p>
+        </div>
+
+        <div class="success alert">
+            <strong>✅ Başarı:</strong> Tüm kullanıcıları oluşturduktan sonra her biri ile giriş yapıp logout testi yapabilirsiniz!
+        </div>
+
+        <h2>🚀 Hızlı Başlangıç</h2>
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="/register" class="button">Kayıt Sayfasını Aç</a>
+            <a href="/login" class="button">Giriş Sayfasını Aç</a>
+        </div>
+
+        <h2>💡 İpuçları</h2>
+        <ul>
+            <li>Browser'da "Form data'yı hatırla" özelliği kapalıysa, şifreleri bir yere not edin</li>
+            <li>Her kayıttan sonra mutlaka logout yapın</li>
+            <li>Aynı anda birden fazla tarayıcı sekmesi açarak işlemi hızlandırabilirsiniz</li>
+            <li>Tüm şifreler aynı: <code>Demo123!@#</code></li>
+        </ul>
+
+        <div class="important">
+            <strong>🔒 Güvenlik Notu:</strong> Bu şifreler sadece demo ve test amaçlıdır. Production ortamında mutlaka değiştirin!
+        </div>
+    </div>
+
+    <script>
+        // Auto-scroll to top
+        window.scrollTo(0, 0);
+    </script>
+</body>
+</html>
