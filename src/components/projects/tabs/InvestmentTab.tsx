@@ -20,6 +20,8 @@ import { EnhancedProject, InvestmentCalculation } from '../../../types/project-e
 import ImpactCalculator from '../ImpactCalculator';
 import { useAuthStore } from '../../../store/authStore';
 import { useNavigate } from 'react-router-dom';
+import { createInvestment } from '../../../services/api/investmentsApi';
+import { useAsyncMutation } from '../../../hooks/useAsyncMutation';
 
 interface InvestmentTabProps {
   project: EnhancedProject;
@@ -31,13 +33,45 @@ export default function InvestmentTab({ project }: InvestmentTabProps) {
   const [amount, setAmount] = useState<number>(1000);
   const [calculation, setCalculation] = useState<InvestmentCalculation | null>(null);
   const [agreed, setAgreed] = useState(false);
-  const [step, setStep] = useState<'calculate' | 'review' | 'confirm'>('calculate');
+  const [step, setStep] = useState<'calculate' | 'review' | 'confirm' | 'success'>('calculate');
+  const [investmentId, setInvestmentId] = useState<number | null>(null);
 
   const minInvestment = project.investmentRange?.min || 100;
   const maxInvestment = project.investmentRange?.max || 1000000;
 
+  // Investment mutation
+  const {
+    execute: submitInvestment,
+    isLoading: isSubmitting,
+    error: submitError,
+  } = useAsyncMutation(
+    async () => {
+      if (!calculation) throw new Error('No calculation available');
+
+      return await createInvestment({
+        projectId: parseInt(project.id),
+        amount: calculation.investmentAmount,
+        currency: 'USD',
+        paymentMethod: 'crypto_wallet',
+        walletAddress: user?.walletAddress,
+        termsAccepted: agreed,
+      });
+    },
+    {
+      onSuccess: (response) => {
+        setInvestmentId(response.investment.id);
+        setStep('success');
+      },
+      onError: (error) => {
+        console.error('Investment failed:', error);
+        alert(`Yatırım işlemi başarısız: ${error.message || 'Bilinmeyen hata'}`);
+      },
+    }
+  );
+
   const handleCalculate = (calc: InvestmentCalculation) => {
     setCalculation(calc);
+    setAmount(calc.investmentAmount);
   };
 
   const handleProceedToReview = () => {
@@ -53,7 +87,7 @@ export default function InvestmentTab({ project }: InvestmentTabProps) {
     setStep('review');
   };
 
-  const handleConfirmInvestment = () => {
+  const handleConfirmInvestment = async () => {
     if (!isAuthenticated) {
       navigate('/login', { state: { from: `/projects/${project.id}` } });
       return;
@@ -62,8 +96,8 @@ export default function InvestmentTab({ project }: InvestmentTabProps) {
       alert('Lütfen şartları ve koşulları kabul edin');
       return;
     }
-    // TODO: Implement actual investment transaction
-    alert('Yatırım işlemi başlatılıyor... (Blockchain entegrasyonu gerekli)');
+
+    await submitInvestment();
   };
 
   return (
@@ -77,6 +111,7 @@ export default function InvestmentTab({ project }: InvestmentTabProps) {
               { id: 'calculate', label: 'Hesapla' },
               { id: 'review', label: 'İncele' },
               { id: 'confirm', label: 'Onayla' },
+              { id: 'success', label: 'Tamamlandı' },
             ].map((s, idx) => (
               <React.Fragment key={s.id}>
                 <div className="flex items-center space-x-2">
@@ -85,13 +120,13 @@ export default function InvestmentTab({ project }: InvestmentTabProps) {
                       step === s.id
                         ? 'bg-green-600 text-white'
                         : idx <
-                          ['calculate', 'review', 'confirm'].indexOf(step)
+                          ['calculate', 'review', 'confirm', 'success'].indexOf(step)
                         ? 'bg-green-100 text-green-700'
                         : 'bg-gray-100 text-gray-400'
                     }`}
                   >
                     {idx <
-                    ['calculate', 'review', 'confirm'].indexOf(step) ? (
+                    ['calculate', 'review', 'confirm', 'success'].indexOf(step) ? (
                       <CheckCircle className="h-5 w-5" />
                     ) : (
                       idx + 1
@@ -105,10 +140,10 @@ export default function InvestmentTab({ project }: InvestmentTabProps) {
                     {s.label}
                   </span>
                 </div>
-                {idx < 2 && (
+                {idx < 3 && (
                   <div
                     className={`flex-1 h-1 mx-4 rounded ${
-                      idx < ['calculate', 'review', 'confirm'].indexOf(step)
+                      idx < ['calculate', 'review', 'confirm', 'success'].indexOf(step)
                         ? 'bg-green-600'
                         : 'bg-gray-200'
                     }`}
@@ -350,15 +385,126 @@ export default function InvestmentTab({ project }: InvestmentTabProps) {
               </button>
               <button
                 onClick={handleConfirmInvestment}
-                disabled={!agreed}
+                disabled={!agreed || isSubmitting}
                 className={`flex-1 px-6 py-3 rounded-lg font-semibold flex items-center justify-center space-x-2 transition-colors ${
-                  agreed
+                  agreed && !isSubmitting
                     ? 'bg-green-600 text-white hover:bg-green-700'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
-                <Zap className="h-5 w-5" />
-                <span>Yatırımı Onayla</span>
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                    <span>İşleniyor...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-5 w-5" />
+                    <span>Yatırımı Onayla</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Step: Success */}
+        {step === 'success' && calculation && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="space-y-6"
+          >
+            {/* Success Message */}
+            <section className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-8 border-2 border-green-200 text-center">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center">
+                  <CheckCircle className="h-10 w-10 text-white" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Yatırım Başarılı!
+              </h2>
+              <p className="text-gray-600 mb-4">
+                Yatırımınız başarıyla oluşturuldu ve işleme alındı.
+              </p>
+              {investmentId && (
+                <div className="inline-block bg-white px-4 py-2 rounded-lg border border-green-200">
+                  <span className="text-sm text-gray-600">Yatırım ID: </span>
+                  <span className="font-mono font-semibold text-green-700">
+                    #{investmentId}
+                  </span>
+                </div>
+              )}
+            </section>
+
+            {/* Investment Summary */}
+            <section className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+              <h3 className="font-semibold text-gray-900 mb-4">Yatırım Özeti</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Yatırım Miktarı</span>
+                  <span className="font-bold text-gray-900">
+                    ${calculation.investmentAmount.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Token Miktarı</span>
+                  <span className="font-bold text-purple-700">
+                    {calculation.tokensReceived.toLocaleString()}{' '}
+                    {project.tokenEconomics?.tokenSymbol || 'CO2'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Karbon Kredisi</span>
+                  <span className="font-bold text-green-700">
+                    {calculation.carbonCredits.toFixed(2)} ton CO₂
+                  </span>
+                </div>
+                <div className="flex justify-between pt-3 border-t border-gray-200">
+                  <span className="text-gray-600">Durum</span>
+                  <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">
+                    İşleniyor
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            {/* Next Steps */}
+            <section className="bg-blue-50 rounded-lg p-6 border border-blue-200">
+              <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                <Info className="h-5 w-5 mr-2 text-blue-600" />
+                Sıradaki Adımlar
+              </h3>
+              <ul className="space-y-2 text-sm text-gray-700">
+                <li className="flex items-start">
+                  <span className="text-blue-600 mr-2">1.</span>
+                  <span>Yatırımınız blockchain'de doğrulanıyor (5-10 dakika)</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-blue-600 mr-2">2.</span>
+                  <span>Tokenlar cüzdanınıza aktarılacak</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-blue-600 mr-2">3.</span>
+                  <span>E-posta ile onay bildirimi alacaksınız</span>
+                </li>
+              </ul>
+            </section>
+
+            {/* Action Buttons */}
+            <div className="flex space-x-4">
+              <button
+                onClick={() => navigate('/dashboard/investments')}
+                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+              >
+                Yatırımlarımı Görüntüle
+              </button>
+              <button
+                onClick={() => navigate('/projects')}
+                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
+              >
+                Diğer Projeler
               </button>
             </div>
           </motion.div>

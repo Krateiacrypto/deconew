@@ -10,6 +10,7 @@ import twoFactorRoutes from './routes/twoFactor.js';
 import workflowRoutes from './routes/workflowRoutes.js';
 import carbonRoutes from './routes/carbonRoutes.js';
 import ngoRoutes from './routes/ngoRoutes.js';
+import investmentRoutes from './routes/investmentRoutes.js';
 import { initSentry, sentryErrorHandler } from './config/sentry-simple.js';
 
 dotenv.config({ path: '.env.local' });
@@ -108,6 +109,9 @@ app.use('/api', carbonRoutes);
 
 // NGO routes
 app.use('/api', ngoRoutes);
+
+// Investment routes
+app.use('/api/investments', investmentRoutes);
 
 // ============================================
 // ERROR HANDLING
