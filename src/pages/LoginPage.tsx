@@ -5,12 +5,14 @@ import { Mail, Lock, Eye, EyeOff, Loader } from 'lucide-react';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { useAuthStore } from '../store/authStore';
 import { useAsyncMutation } from '../hooks/useAsyncOperation';
+import { TwoFactorVerify } from '../components/auth/TwoFactorVerify';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuthStore();
+  const [showForm, setShowForm] = useState(true); // Controls login form vs 2FA view
+  const { login, requires2FA, pending2FAEmail, loginWith2FA } = useAuthStore();
   const navigate = useNavigate();
 
   /**
@@ -23,12 +25,18 @@ export const LoginPage: React.FC = () => {
     },
     {
       showErrorToast: true,
-      showSuccessToast: true,
-      successMessage: 'Başarıyla giriş yaptınız!',
+      showSuccessToast: false, // Don't show success yet (might need 2FA)
       errorMessage: 'Giriş yapılırken bir hata oluştu',
       autoLog: true,
       onSuccess: () => {
-        navigate('/dashboard');
+        const { requires2FA } = useAuthStore.getState();
+        if (!requires2FA) {
+          // Direct login successful
+          navigate('/dashboard');
+        } else {
+          // 2FA required - show 2FA form
+          setShowForm(false);
+        }
       },
     }
   );
@@ -38,6 +46,42 @@ export const LoginPage: React.FC = () => {
     await performLogin();
   };
 
+  // Handle 2FA verification
+  const handle2FAVerify = async (token: string, isBackupCode: boolean) => {
+    if (loginWith2FA) {
+      await loginWith2FA(email, password, token, isBackupCode);
+      navigate('/dashboard');
+    }
+  };
+
+  const handle2FACancel = () => {
+    setShowForm(true);
+    useAuthStore.setState({ requires2FA: false, pending2FAEmail: null });
+  };
+
+  // If 2FA is required, show 2FA verification form
+  if (!showForm && requires2FA) {
+    return (
+      <ErrorBoundary>
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="max-w-md w-full"
+          >
+            <TwoFactorVerify
+              onVerify={handle2FAVerify}
+              onCancel={handle2FACancel}
+              userEmail={pending2FAEmail || email}
+            />
+          </motion.div>
+        </div>
+      </ErrorBoundary>
+    );
+  }
+
+  // Show login form
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

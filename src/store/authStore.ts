@@ -92,16 +92,22 @@ export const useAuthStore = create<AuthState>()(
 
       checkSession: async () => {
         try {
-          const { data: { session } } = await supabase.auth.getSession();
+          // Check if JWT token exists in localStorage
+          const token = localStorage.getItem('access_token');
 
-          if (session?.user) {
-            try {
-              await get().fetchUserProfile(session.user.id);
-            } catch (profileError) {
-              logger.error('Profile fetch failed during session check', profileError);
-              set({ user: null, isAuthenticated: false });
-            }
-          } else {
+          if (!token) {
+            set({ user: null, isAuthenticated: false });
+            return;
+          }
+
+          // Validate token by fetching current user from backend
+          try {
+            await get().fetchUserProfile();
+          } catch (profileError) {
+            logger.error('Profile fetch failed during session check', profileError);
+            // Token might be expired or invalid
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
             set({ user: null, isAuthenticated: false });
           }
         } catch (error) {
@@ -110,60 +116,39 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      fetchUserProfile: async (userId: string) => {
+      fetchUserProfile: async () => {
         try {
-          const { data, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', userId)
-            .maybeSingle();
+          // Fetch current user from backend using JWT token
+          const userData = await authApi.getCurrentUser();
 
-          if (error) {
-            logger.error('Error fetching user profile', error);
-            throw error;
-          }
+          const user = convertDbUserToUser({
+            id: userData.id,
+            email: userData.email,
+            name: `${userData.first_name} ${userData.last_name}`,
+            role: 'user',
+            created_at: userData.created_at,
+            is_active: true,
+            kyc_status: userData.kyc_status,
+            kyc_level: userData.kyc_level,
+            two_factor_enabled: userData.two_factor_enabled || false,
+            email_verified: true,
+            language: userData.language,
+            country: userData.country,
+            organization_name: userData.organization_name,
+            organization_type: userData.organization_type,
+          });
 
-          if (!data) {
-            // Get auth user info to create profile
-            const { data: { user: authUser } } = await supabase.auth.getUser();
-
-            if (!authUser) {
-              throw new Error('Kullanıcı bilgisi alınamadı');
-            }
-
-            logger.info('Creating missing user profile for:', authUser.email);
-
-            // Create user profile from auth user
-            const { data: newUser, error: insertError } = await supabase
-              .from('users')
-              .insert([
-                {
-                  id: authUser.id,
-                  email: authUser.email || '',
-                  name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
-                  role: authUser.user_metadata?.role || 'user',
-                  is_active: true,
-                  email_verified: true,
-                  kyc_status: 'pending',
-                  kyc_level: 'level_1',
-                  verification_level: 'basic'
-                }
-              ])
-              .select()
-              .single();
-
-            if (insertError) {
-              logger.error('Failed to create user profile', insertError);
-              throw insertError;
-            }
-
-            const user = convertDbUserToUser(newUser);
-            set({ user, isAuthenticated: true });
-            return;
-          }
-
-          const user = convertDbUserToUser(data);
           set({ user, isAuthenticated: true });
+
+          // Set Sentry user context
+          setSentryUser({
+            id: user.id,
+            email: user.email,
+            username: user.name,
+            role: user.role,
+          });
+
+          logger.info('User profile loaded', { userId: user.id });
         } catch (error: any) {
           logger.error('Failed to fetch user profile', error);
           set({ user: null, isAuthenticated: false });
@@ -174,88 +159,68 @@ export const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true });
         try {
-          // Try backend API first (supports 2FA)
-          try {
-            const response = await authApi.login({ email, password });
+          // Use backend MySQL auth exclusively
+          const response = await authApi.login({ email, password });
 
-            // Check if 2FA is required
-            if (response.requires2FA) {
-              logger.info('2FA required for login', { email });
-              set({
-                isLoading: false,
-                requires2FA: true,
-                pending2FAEmail: email,
-              });
-              toast('İki faktörlü doğrulama gerekli', {
-                icon: '🔐',
-              });
-              return;
-            }
-
-            // No 2FA - complete login
-            const user = convertDbUserToUser({
-              id: response.user.id,
-              email: response.user.email,
-              name: `${response.user.first_name} ${response.user.last_name}`,
-              role: 'user',
-              created_at: response.user.created_at,
-              is_active: true,
-              kyc_status: response.user.kyc_status,
-              kyc_level: response.user.kyc_level,
-              two_factor_enabled: false,
-              email_verified: true,
-              language: response.user.language,
-              country: response.user.country,
-              organization_name: response.user.organization_name,
-              organization_type: response.user.organization_type,
-            });
-
-            // Set Sentry user context
-            setSentryUser({
-              id: user.id,
-              email: user.email,
-              username: user.name,
-              role: user.role,
-            });
-
+          // Check if 2FA is required
+          if (response.requires2FA) {
+            logger.info('2FA required for login', { email });
             set({
-              user,
-              isAuthenticated: true,
               isLoading: false,
-              requires2FA: false,
-              pending2FAEmail: null,
+              requires2FA: true,
+              pending2FAEmail: email,
             });
-            toast.success('Giriş başarılı!');
+            toast('İki faktörlü doğrulama gerekli', {
+              icon: '🔐',
+            });
             return;
-          } catch (backendError) {
-            // Backend failed, fallback to Supabase
-            logger.warn('Backend login failed, falling back to Supabase', backendError);
           }
 
-          // Fallback: Use Supabase
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password
+          // No 2FA - complete login
+          const user = convertDbUserToUser({
+            id: response.user.id,
+            email: response.user.email,
+            name: `${response.user.first_name} ${response.user.last_name}`,
+            role: 'user',
+            created_at: response.user.created_at,
+            is_active: true,
+            kyc_status: response.user.kyc_status,
+            kyc_level: response.user.kyc_level,
+            two_factor_enabled: response.user.two_factor_enabled || false,
+            email_verified: true,
+            language: response.user.language,
+            country: response.user.country,
+            organization_name: response.user.organization_name,
+            organization_type: response.user.organization_type,
           });
 
-          if (error) throw error;
+          // Set Sentry user context
+          setSentryUser({
+            id: user.id,
+            email: user.email,
+            username: user.name,
+            role: user.role,
+          });
 
-          if (!data.user) {
-            throw new Error('Kullanıcı bilgisi alınamadı');
-          }
+          set({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+            requires2FA: false,
+            pending2FAEmail: null,
+          });
 
-          await get().fetchUserProfile(data.user.id);
-
-          await supabase
-            .from('users')
-            .update({ last_login: new Date().toISOString() })
-            .eq('id', data.user.id);
-
-          set({ isLoading: false, requires2FA: false, pending2FAEmail: null });
+          logger.info('Login successful', { email, userId: user.id });
           toast.success('Giriş başarılı!');
         } catch (error: any) {
           logger.error('Login failed', error);
-          set({ user: null, isAuthenticated: false, isLoading: false, requires2FA: false, pending2FAEmail: null });
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            requires2FA: false,
+            pending2FAEmail: null
+          });
 
           const errorMessage = error.message === 'Invalid login credentials'
             ? 'Email veya şifre hatalı!'
