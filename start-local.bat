@@ -54,7 +54,13 @@ if not exist ".env.local" (
     echo [OK] Backend .env.local exists
 )
 
+REM Run migrations (first time)
 if not exist "dist\" (
+    echo Running database migrations...
+    call npm run migrate
+    if %errorlevel% neq 0 (
+        echo [WARNING] Migrations failed - continuing anyway
+    )
     echo Building backend...
     call npm run build
 )
