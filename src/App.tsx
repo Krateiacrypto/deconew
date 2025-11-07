@@ -42,6 +42,7 @@ const FilterComparisonSettings = lazy(() => import('./pages/admin/FilterComparis
 const ProjectDetailEnhanced = lazy(() => import('./pages/ProjectDetailEnhanced'));
 const CarbonCalculatorPage = lazy(() => import('./pages/CarbonCalculatorPage'));
 const CarbonDashboardPage = lazy(() => import('./pages/CarbonDashboardPage'));
+const PortfolioDashboardPage = lazy(() => import('./pages/PortfolioDashboardPage'));
 const NGOProjectDiscoveryPage = lazy(() => import('./pages/ngo/NGOProjectDiscoveryPage'));
 const NGOEndorsementPage = lazy(() => import('./pages/ngo/NGOEndorsementPage'));
 
@@ -123,6 +124,7 @@ function App() {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/carbon-dashboard" element={<CarbonDashboardPage />} />
+              <Route path="/investment-portfolio" element={<PortfolioDashboardPage />} />
               <Route path="/projects/:projectId" element={<ProjectDetailEnhanced />} />
               <Route path="/trading" element={<TradingPage />} />
               <Route path="/ico" element={<ICOPage />} />
