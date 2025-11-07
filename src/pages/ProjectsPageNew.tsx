@@ -58,13 +58,14 @@ export const ProjectsPage: React.FC = () => {
         });
       });
 
-      if (response && response.success && response.data) {
-        setProjects(response.data.projects);
+      // Backend response format: { success: true, count: N, projects: [...] }
+      if (response && response.success && response.projects) {
+        setProjects(response.projects);
       }
     };
 
     loadProjects();
-  }, [selectedCategory, searchTerm, execute]);
+  }, [selectedCategory, searchTerm]); // Removed 'execute' to prevent infinite loop
 
   const handleProjectSelection = (projectId: number) => {
     setSelectedProjects(prev => {

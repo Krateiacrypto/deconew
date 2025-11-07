@@ -63,12 +63,21 @@ export interface ProjectFilters {
 // ============================================
 
 /**
+ * Public Projects Response (direct from backend, no data wrapper)
+ */
+export interface PublicProjectsResponse {
+  success: boolean;
+  count: number;
+  projects: PublicProject[];
+}
+
+/**
  * Get public (approved) projects
  * GET /api/projects
  */
 export async function getPublicProjects(
   filters?: ProjectFilters
-): Promise<ApiResponse<{ projects: PublicProject[]; count: number }>> {
+): Promise<PublicProjectsResponse> {
   const params = new URLSearchParams();
 
   if (filters?.category && filters.category !== 'all') {
@@ -88,7 +97,7 @@ export async function getPublicProjects(
   }
 
   const queryString = params.toString() ? `?${params.toString()}` : '';
-  return apiClient.get(`/projects${queryString}`, false); // Public endpoint, no auth required
+  return apiClient.get<PublicProjectsResponse>(`/projects${queryString}`, false); // Public endpoint, no auth required
 }
 
 /**
