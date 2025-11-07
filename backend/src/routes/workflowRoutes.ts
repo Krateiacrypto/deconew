@@ -8,6 +8,7 @@ import {
   submitProject,
   getPendingProjects,
   getPublicProjects,
+  getProjectById,
   assignVerifier,
   reviewProject,
   getWorkflowTimeline,
@@ -19,6 +20,7 @@ const router = Router();
 
 // Public routes (must be before parameterized routes)
 router.get('/projects', getPublicProjects);
+router.get('/projects/:id', getProjectById);
 
 // Project submission
 router.post('/projects/submit', submitProject);

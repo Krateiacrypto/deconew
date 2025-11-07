@@ -101,13 +101,58 @@ export async function getPublicProjects(
 }
 
 /**
+ * Project Detail Response (full project with relations)
+ */
+export interface ProjectDetailResponse {
+  success: boolean;
+  project: PublicProject & {
+    provider_type?: string;
+    provider_country?: string;
+    carbon_calculation?: {
+      id: number;
+      project_id: number;
+      baseline_emissions: string;
+      baseline_methodology: string;
+      project_emissions: string;
+      project_methodology: string;
+      project_lifetime_years: number;
+      token_exchange_rate: string;
+      verification_status: string;
+      verified_by?: number;
+      verified_at?: string;
+      created_at: string;
+    } | null;
+    endorsements?: Array<{
+      id: number;
+      project_id: number;
+      ngo_id: number;
+      ngo_name: string;
+      endorsement_type: string;
+      status: string;
+      comments?: string;
+      created_at: string;
+    }>;
+    documents?: Array<{
+      id: number;
+      document_type: string;
+      file_name: string;
+      file_type: string;
+      file_size: number;
+      uploaded_at: string;
+      workflow_stage: string;
+    }>;
+    endorsement_count: number;
+  };
+}
+
+/**
  * Get project details by ID
  * GET /api/projects/:id
  */
 export async function getProjectDetails(
   projectId: number
-): Promise<ApiResponse<{ project: PublicProject }>> {
-  return apiClient.get(`/projects/${projectId}`, false);
+): Promise<ProjectDetailResponse> {
+  return apiClient.get<ProjectDetailResponse>(`/projects/${projectId}`, false);
 }
 
 /**

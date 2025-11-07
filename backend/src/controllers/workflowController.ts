@@ -224,6 +224,100 @@ export async function getPublicProjects(req: Request, res: Response): Promise<vo
 }
 
 /**
+ * Get project details by ID (public)
+ * GET /api/projects/:id
+ */
+export async function getProjectById(req: Request, res: Response): Promise<void> {
+  try {
+    const projectId = parseInt(req.params.id);
+
+    if (isNaN(projectId)) {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid project ID',
+      });
+      return;
+    }
+
+    // Get project with provider info
+    const [projectRows] = await pool.query<RowDataPacket[]>(
+      `SELECT
+        p.*,
+        COALESCE(u.organization_name, CONCAT(u.first_name, ' ', u.last_name)) as provider_name,
+        u.organization_type as provider_type,
+        u.country as provider_country
+      FROM projects p
+      JOIN users u ON p.provider_id = u.id
+      WHERE p.id = ? AND p.workflow_stage = 'approved' AND p.status = 'active'`,
+      [projectId]
+    );
+
+    if (projectRows.length === 0) {
+      res.status(404).json({
+        success: false,
+        error: 'Project not found',
+      });
+      return;
+    }
+
+    const project = projectRows[0];
+
+    // Get carbon calculation
+    const [carbonCalcs] = await pool.query<RowDataPacket[]>(
+      `SELECT * FROM carbon_calculations WHERE project_id = ? ORDER BY created_at DESC LIMIT 1`,
+      [projectId]
+    );
+
+    // Get endorsements
+    const [endorsements] = await pool.query<RowDataPacket[]>(
+      `SELECT
+        e.*,
+        COALESCE(u.organization_name, u.first_name) as ngo_name
+      FROM project_endorsements e
+      JOIN users u ON e.ngo_id = u.id
+      WHERE e.project_id = ? AND e.status = 'active'`,
+      [projectId]
+    );
+
+    // Get documents
+    const [documents] = await pool.query<RowDataPacket[]>(
+      `SELECT
+        id, document_type, file_name, file_type, file_size, uploaded_at, workflow_stage
+      FROM project_documents
+      WHERE project_id = ? AND is_public = TRUE
+      ORDER BY uploaded_at DESC`,
+      [projectId]
+    );
+
+    // Get impact metrics (if exists)
+    const impactMetrics = project.impact_metrics || {};
+
+    // Assemble full project details
+    const projectDetails = {
+      ...project,
+      carbon_calculation: carbonCalcs.length > 0 ? carbonCalcs[0] : null,
+      endorsements,
+      documents,
+      impact_metrics: impactMetrics,
+      endorsement_count: endorsements.length,
+    };
+
+    res.json({
+      success: true,
+      project: projectDetails,
+    });
+
+  } catch (error: any) {
+    console.error('Get project by ID error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch project details',
+      details: error.message,
+    });
+  }
+}
+
+/**
  * Assign verifier to project
  * POST /api/admin/projects/:id/assign-verifier
  */

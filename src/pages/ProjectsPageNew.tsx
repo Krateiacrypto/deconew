@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Leaf,
@@ -26,6 +27,7 @@ import {
 import { useAsyncOperation } from '../hooks/useAsyncOperation';
 
 export const ProjectsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -252,7 +254,8 @@ export const ProjectsPage: React.FC = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className={`bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 ${
+                  onClick={() => navigate(`/projects/${project.id}`)}
+                  className={`bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer ${
                     selectedProjects.includes(project.id) ? 'ring-4 ring-blue-500' : ''
                   }`}
                 >
@@ -264,7 +267,7 @@ export const ProjectsPage: React.FC = () => {
                       className="w-full h-full object-cover"
                     />
                     {/* Selection Checkbox */}
-                    <div className="absolute top-4 left-4 flex items-center space-x-2">
+                    <div className="absolute top-4 left-4 flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                       <label className="flex items-center cursor-pointer">
                         <input
                           type="checkbox"
@@ -338,8 +341,14 @@ export const ProjectsPage: React.FC = () => {
                         </div>
                         <div className="text-xs text-gray-600">tCO2 başına</div>
                       </div>
-                      <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
-                        Yatırım Yap
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/projects/${project.id}`);
+                        }}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                      >
+                        Detaylar
                       </button>
                     </div>
                   </div>

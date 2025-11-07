@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { EnhancedProject } from '../types/project-enhanced';
 import { useDataStore } from '../store/dataStore';
+import { getProjectDetails, calculateProgress } from '../services/api/projectsApi';
+import { useAsyncOperation } from '../hooks/useAsyncOperation';
 
 // Import tab components (to be created)
 import OverviewTab from '../components/projects/tabs/OverviewTab';
@@ -48,39 +50,175 @@ const tabs: Tab[] = [
   { id: 'investment', label: 'Yatırım Yap', icon: Award },
 ];
 
+/**
+ * Map backend ProjectDetailResponse to frontend EnhancedProject
+ */
+function mapBackendToEnhancedProject(backendProject: any): EnhancedProject {
+  const project = backendProject;
+
+  // Calculate days remaining from end_date
+  const daysRemaining = project.end_date
+    ? Math.max(0, Math.ceil((new Date(project.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
+  // Calculate funding velocity
+  const startDate = new Date(project.start_date || project.created_at);
+  const daysSinceStart = Math.max(1, Math.ceil((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+  const fundingVelocity = parseFloat(project.current_funding) / daysSinceStart;
+
+  return {
+    // Base project fields
+    id: project.id.toString(),
+    title: project.title,
+    description: project.description,
+    category: project.category,
+    location: project.location,
+    providerId: project.provider_id.toString(),
+    status: project.status,
+    fundingGoal: parseFloat(project.funding_goal),
+    currentFunding: parseFloat(project.current_funding),
+    fundingProgress: calculateProgress({ ...project, progress: 0 }),
+    minInvestment: parseFloat(project.min_investment),
+    investorCount: project.participants_count || 0,
+    images: project.image_url ? [project.image_url] : [],
+    createdAt: project.created_at,
+    updatedAt: project.updated_at,
+
+    // Enhanced fields with reasonable defaults
+    team: [],
+    partners: project.endorsements?.map((e: any) => ({
+      id: e.id.toString(),
+      name: e.ngo_name,
+      logo: '',
+      type: 'verification' as const,
+      description: e.comments,
+    })) || [],
+
+    milestones: [],
+
+    locationDetails: {
+      country: project.provider_country || project.location,
+      region: project.location,
+      coordinates: { lat: 0, lng: 0 },
+      area: 0,
+    },
+
+    carbonImpact: {
+      totalCO2Reduction: parseFloat(project.co2_reduction_calculated || '0'),
+      equivalentTrees: Math.round(parseFloat(project.co2_reduction_calculated || '0') * 50),
+      equivalentCars: Math.round(parseFloat(project.co2_reduction_calculated || '0') / 4.6),
+      biodiversityScore: 0,
+    },
+
+    tokenEconomics: {
+      tokenSymbol: 'CO2',
+      totalSupply: parseFloat(project.carbon_credits || '0'),
+      circulatingSupply: 0,
+      initialPrice: 10,
+      currentPrice: 10,
+      priceHistory: [],
+      marketCap: parseFloat(project.carbon_credits || '0') * 10,
+      tradingVolume24h: 0,
+    },
+
+    revenueModel: {
+      sources: [],
+      projectedRevenue: [],
+      paymentSchedule: 'annually' as const,
+    },
+
+    historicalReturns: {
+      roi: [],
+      distributions: [],
+      benchmarkComparison: {
+        project: 0,
+        sectorAverage: 0,
+        marketIndex: 0,
+      },
+    },
+
+    riskAssessment: {
+      overall: 'medium' as const,
+      factors: [],
+      auditScore: 0,
+    },
+
+    verification: {
+      certifications: project.carbon_calculation ? [{
+        name: 'Carbon Calculation Verified',
+        issuer: 'Platform',
+        issueDate: project.carbon_calculation.verified_at || project.carbon_calculation.created_at,
+        verified: project.carbon_calculation.verification_status === 'verified',
+        documentUrl: '',
+      }] : [],
+      auditReports: [],
+      blockchainTransactions: [],
+      thirdPartyReviews: [],
+    },
+
+    socialProof: {
+      totalInvestors: project.participants_count || 0,
+      recentInvestments: [],
+      averageRating: 4.5,
+      totalReviews: project.endorsement_count || 0,
+      mediaCoverage: [],
+    },
+
+    investorReviews: [],
+    updates: [],
+    averageInvestment: parseFloat(project.current_funding) / Math.max(1, project.participants_count || 1),
+    investmentRange: {
+      min: parseFloat(project.min_investment),
+      max: parseFloat(project.funding_goal),
+    },
+    daysRemaining,
+    fundingVelocity,
+    badges: [
+      project.verified ? 'verified' : null,
+      project.calculation_verified ? 'high_impact' : null,
+      project.endorsement_count > 2 ? 'featured' : null,
+    ].filter(Boolean) as any[],
+  };
+}
+
 export default function ProjectDetailEnhanced() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const { projects } = useDataStore();
-
-  const getProjectById = (id: string) => projects.find(p => p.id === id);
 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [project, setProject] = useState<EnhancedProject | null>(null);
   const [isLiked, setIsLiked] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch project details from backend
+  const {
+    execute: loadProject,
+    data: projectData,
+    isLoading,
+    error,
+  } = useAsyncOperation(
+    async (id: number) => {
+      const response = await getProjectDetails(id);
+      return response.project;
+    },
+    {
+      onSuccess: (data) => {
+        const enhancedProject = mapBackendToEnhancedProject(data);
+        setProject(enhancedProject);
+      },
+      onError: (error) => {
+        console.error('Failed to load project:', error);
+      },
+    }
+  );
 
   useEffect(() => {
     if (projectId) {
-      loadProject(projectId);
+      const id = parseInt(projectId);
+      if (!isNaN(id)) {
+        loadProject(id);
+      }
     }
   }, [projectId]);
-
-  const loadProject = async (id: string) => {
-    setIsLoading(true);
-    try {
-      // TODO: Replace with actual API call to fetch EnhancedProject
-      const baseProject = getProjectById(id);
-      if (baseProject) {
-        // For now, cast to EnhancedProject (in production, fetch full data)
-        setProject(baseProject as any as EnhancedProject);
-      }
-    } catch (error) {
-      console.error('Failed to load project:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleShare = () => {
     if (navigator.share) {
