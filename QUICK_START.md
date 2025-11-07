@@ -1,6 +1,104 @@
-# 🚀 DECARBONIZE Platform - Test Rehberi
+# ⚡ Decarbonize - Quick Start Guide
 
-## ✅ Son Güncelleme: 2025-10-05
+**Version**: 3.4.1
+**Last Updated**: 7 Kasım 2025
+**Status**: ✅ Phase 3.4 Complete - Ready for Testing
+
+---
+
+## 🎯 2 Dakikada Başlat!
+
+### Windows:
+
+```bash
+# 1. Database setup (ilk kez)
+mysql -u root -p < setup-database.sql
+
+# 2. Her şeyi başlat
+start-local.bat
+```
+
+### Linux/Mac:
+
+```bash
+# 1. Database setup (ilk kez)
+mysql -u root -p < setup-database.sql
+
+# 2. Her şeyi başlat
+chmod +x start-local.sh
+./start-local.sh
+```
+
+**İşte bu kadar!** 🎉
+
+Browser otomatik açılır: `http://localhost:5173/projects`
+
+---
+
+## 📁 Dosya Yapısı
+
+```
+Decarbonize/
+├── 📄 LOCAL_TEST_COMPLETE_GUIDE.md  ← Detaylı guide
+├── 📄 QUICK_START.md                 ← Bu dosya
+├── 📄 setup-database.sql             ← DB setup script
+├── 🔧 start-local.bat                ← Windows starter
+├── 🔧 start-local.sh                 ← Linux/Mac starter
+├── 📄 .env.local                     ← Frontend config
+├── backend/
+│   ├── 📄 .env.local                 ← Backend config
+│   ├── migrations/                   ← DB migrations (10 files)
+│   └── src/                          ← Backend source
+└── src/                              ← Frontend source
+```
+
+---
+
+## ✅ Gereksinimler
+
+- ✅ Node.js v18+
+- ✅ MySQL 8.0+
+- ✅ 10 GB boş disk alanı
+
+---
+
+## 🧪 Test Et
+
+1. **Projects Page:** `http://localhost:5173/projects`
+2. **Backend API:** `http://localhost:3002/api/projects`
+3. **Health Check:** `curl http://localhost:3002/api/projects`
+
+---
+
+## 🆘 Sorun mu var?
+
+👉 **Detaylı guide:** `LOCAL_TEST_COMPLETE_GUIDE.md`
+
+**Hızlı çözümler:**
+
+```bash
+# MySQL başlamadı mı?
+net start MySQL80  # Windows
+brew services start mysql  # Mac
+
+# Port çakışması mı?
+netstat -ano | findstr :3002  # Windows
+lsof -ti:3002 | xargs kill -9  # Linux/Mac
+
+# Dependencies eksik mi?
+cd backend && npm install
+cd .. && npm install
+```
+
+---
+
+## 🚀 Sonraki Adımlar
+
+Phase 3.4 tamamlandı! ✅
+
+**Sıradaki:** Phase 3.5 - ProjectDetail Integration
+
+---
 
 ---
 
