@@ -7,7 +7,7 @@ import type { PerformanceDataPoint } from './InvestmentPerformanceChart';
 import type { AllocationData } from './AssetAllocationChart';
 import type { Investment } from './InvestmentsList';
 
-const PortfolioDashboard: React.FC = () => {
+const PortfolioDashboard: React.FC = React.memo(() => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Mock data - Replace with API call in the future
@@ -265,6 +265,6 @@ const PortfolioDashboard: React.FC = () => {
       </div>
     </div>
   );
-};
+});
 
 export default PortfolioDashboard;

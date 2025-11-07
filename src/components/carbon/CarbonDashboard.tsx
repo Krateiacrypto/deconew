@@ -10,7 +10,7 @@ import LiveCarbonCounter from './LiveCarbonCounter';
 import ImpactMetricCard from './ImpactMetricCard';
 import CarbonImpactChart from './CarbonImpactChart';
 
-export default function CarbonDashboard() {
+const CarbonDashboard = React.memo(function CarbonDashboard() {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '1y' | 'all'>('30d');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -237,4 +237,6 @@ export default function CarbonDashboard() {
       </div>
     </div>
   );
-}
+});
+
+export default CarbonDashboard;

@@ -9,7 +9,7 @@ import type { CategoryData } from './CategoryInputs';
 
 type Step = 'mode' | 'inputs' | 'results';
 
-const AdvancedCalculator: React.FC = () => {
+const AdvancedCalculator: React.FC = React.memo(() => {
   const [currentStep, setCurrentStep] = useState<Step>('mode');
   const [mode, setMode] = useState<CalculatorMode>('personal');
   const [categoryData, setCategoryData] = useState<CategoryData>({
@@ -235,6 +235,6 @@ const AdvancedCalculator: React.FC = () => {
       </div>
     </div>
   );
-};
+});
 
 export default AdvancedCalculator;
